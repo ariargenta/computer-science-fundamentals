@@ -49,19 +49,15 @@ class UnorderedArray {
         void remove(int index) {
             assert(m_array != NULL);
 
-            if(index >= m_maxSize) {
+            if(index >= m_numElements) {
                 return;
             }
 
-            for(int k = index; k < m_maxSize - 1; ++k) {
+            for(int k = index; k < m_numElements - 1; ++k) {
                 m_array[k] = m_array[k + 1];
             }
 
-            m_maxSize--;
-
-            if(m_numElements >= m_maxSize) {
-                m_numElements = m_maxSize - 1;
-            }
+            m_numElements--;
         }
 
         virtual T& operator[](int index) {
@@ -271,23 +267,23 @@ class OrderedArray {
 void UnorderedArrayTest() {
     UnorderedArray<int> array(3);
 
-    if(array.search(3) != -1) {
+    if(array.search(3) == -1) {
         array.push(3);
     }
 
-    if(array.search(53) != -1) {
+    if(array.search(53) == -1) {
         array.push(53);
     }
 
-    if(array.search(83) != -1) {
+    if(array.search(83) == -1) {
         array.push(83);
     }
     
-    if(array.search(23) != -1) {
+    if(array.search(23) == -1) {
         array.push(23);
     }
 
-    if(array.search(82) != -1) {
+    if(array.search(82) == -1) {
         array.push(82);
     }
 
