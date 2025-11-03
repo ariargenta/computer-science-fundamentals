@@ -271,11 +271,25 @@ class OrderedArray {
 void UnorderedArrayTest() {
     UnorderedArray<int> array(3);
 
-    array.push(3);
-    array.push(53);
-    array.push(83);
-    array.push(23);
-    array.push(82);
+    if(array.search(3) != -1) {
+        array.push(3);
+    }
+
+    if(array.search(53) != -1) {
+        array.push(53);
+    }
+
+    if(array.search(83) != -1) {
+        array.push(83);
+    }
+    
+    if(array.search(23) != -1) {
+        array.push(23);
+    }
+
+    if(array.search(82) != -1) {
+        array.push(82);
+    }
 
     array[2] = 112;
 
