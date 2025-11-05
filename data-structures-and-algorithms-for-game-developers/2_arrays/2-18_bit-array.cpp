@@ -1,3 +1,7 @@
+#include <iostream>
+#include <vector>
+#include <cassert>
+
 #define BYTE_BITS 8
 #define BIT_TO_CHAR(bit) ((bit) / BYTE_BITS)
 #define BIT_IN_CHAR(bit) (1 << (BYTE_BITS - 1 - ((bit) % BYTE_BITS)))
@@ -66,3 +70,39 @@ class BitArray {
         unsigned int m_totalBits;
         unsigned int m_totalBytes;
 };
+
+int main(int argc, char* argv[]) {
+    BitArray bitArray(16);
+
+    std::cout << "Bit Array Example" << std::endl;
+    std::cout << "Data Structures for Game Developers" << std::endl;
+    std::cout << "Aria Argenta" << std::endl << std::endl;
+    std::cout << "Initial bit values for 2, 3 and 14" << std::endl << std::endl;
+    std::cout << "Bit 2 = " << bitArray[2] << "." << std::endl;
+    std::cout << "Bit 3 = " << bitArray[3] << "." << std::endl;
+    std::cout << "Bit 14 = " << bitArray[14] << "." << std::endl << std::endl;
+    std::cout << "Set bits 2 and 14" << std::endl << std::endl;
+
+    bitArray.SetBit(2);
+    bitArray.SetBit(14);
+
+    std::cout << "Bit 2 = " << bitArray[2] << "." << std::endl;
+    std::cout << "Bit 3 = " << bitArray[3] << "." << std::endl;
+    std::cout << "Bit 14 = " << bitArray[14] << "." << std::endl << std::endl;
+    std::cout << "Set all bits" << std::endl << std::endl;
+
+    bitArray.SetAllBits();
+
+    std::cout << "Bit 2 = " << bitArray[2] << "." << std::endl;
+    std::cout << "Bit 3 = " << bitArray[3] << "." << std::endl;
+    std::cout << "Bit 14 = " << bitArray[14] << "." << std::endl << std::endl;
+    std::cout << "Clear all bits" << std::endl << std::endl;
+
+    bitArray.ClearAllBits();
+
+    std::cout << "Bit 2 = " << bitArray[2] << "." << std::endl;
+    std::cout << "Bit 3 = " << bitArray[3] << "." << std::endl;
+    std::cout << "Bit 14 = " << bitArray[14] << "." << std::endl << std::endl;
+
+    return 1;
+}
