@@ -1,3 +1,6 @@
+#include <iostream>
+#include <cassert>
+
 template<typename T> class LinkIterator;
 template<typename T> class LinkList;
 
@@ -127,3 +130,31 @@ class LinkList {
         LinkNode<T>* m_root;
         LinkNode<T>* m_lastNode;
 };
+
+int main(int argc, char** argv) {
+    std::cout << "Link list example" << std::endl;
+    std::cout << "Chapter 5: Linked Lists" << std::endl;
+    std::cout << std::endl;
+
+    LinkList<int> lList;
+
+    lList.Push(101);
+    lList.Push(201);
+    lList.Push(301);
+    lList.Push(401);
+    lList.Push(501);
+    lList.Pop();
+    lList.Push(601);
+
+    LinkIterator<int> it;
+
+    std::cout << "Contents of the link list:";
+
+    for(it = lList.Begin(); it != lList.End(); ++it) {
+        std::cout << " " << *it;
+    }
+
+    std::cout << "." << std::endl << std::endl;
+
+    return 1;
+}
