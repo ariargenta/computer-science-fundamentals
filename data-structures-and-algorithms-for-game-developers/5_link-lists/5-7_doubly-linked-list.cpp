@@ -10,8 +10,11 @@ class LinkNode {
     friend class LinkList<T>;
 
     private:
+        LinkNode() : m_next(0), m_previous(0) {}
+
         T m_data;
         LinkNode* m_next;
+        LinkNode* m_previous;
 };
 
 template<typename T>
@@ -53,6 +56,18 @@ class LinkIterator {
             return(m_node == node);
         }
 
+        void operator -- () {
+            assert(m_node != NULL);
+
+            m_node = m_node -> m_previous;
+        }
+
+        void operator -- (int) {
+            assert(m_node != NULL);
+
+            m_node = m_node -> m_previous;
+        }
+
     private:
         LinkNode<T>* m_node;
 };
@@ -74,6 +89,10 @@ class LinkList {
             return m_root;
         }
 
+        LinkNode<T>* Last() {
+            return m_lastNode;
+        }
+
         LinkNode<T>* End() {
             return NULL;
         }
@@ -85,36 +104,17 @@ class LinkList {
 
             node -> m_data = newData;
             node -> m_next = NULL;
+            node -> m_previous = NULL;
 
             if(m_lastNode != NULL) {
                 m_lastNode -> m_next = node;
-                m_lastNode = node;
+                node -> m_previous = m_lastNode;
             }
             else {
                 m_root = node;
-                m_lastNode = node;
             }
 
-            m_size++;
-        }
-
-        void Push_Front(T newData) {
-            LinkNode<T>* node = new LinkNode<T>;
-
-            assert(node != NULL);
-
-            node -> m_data = newData;
-            node -> m_next = NULL;
-
-            if(m_root != NULL) {
-                node -> m_next = m_root;
-                m_root = node;
-            }
-            else {
-                m_root = node;
-                m_lastNode = node;
-            }
-
+            m_lastNode = node;
             m_size++;
         }
 
@@ -127,19 +127,42 @@ class LinkList {
                 m_root = NULL;
             }
             else {
-                LinkNode<T>* prevNode = m_root;
+                LinkNode<T>* prevNode = m_lastNode -> m_previous;
 
-                while(prevNode -> m_next != NULL && prevNode -> m_next != m_lastNode) {
-                    prevNode = prevNode -> m_next;
-                }
+                prevNode -> m_next = NULL;
 
                 delete m_lastNode;
 
-                prevNode -> m_next = NULL;
                 m_lastNode = prevNode;
             }
 
             m_size = (m_size == 0 ? m_size : m_size - 1);
+        }
+
+        int GetSize() {
+            return m_size;
+        }
+
+        void Push_Front(T newData) {
+            LinkNode<T>* node = new LinkNode<T>;
+
+            assert(node != NULL);
+
+            node -> m_data = newData;
+            node -> m_next = NULL;
+            node -> m_previous = NULL;
+
+            if(m_root != NULL) {
+                node -> m_next = m_root;
+                m_root -> m_previous = node;
+                m_root = node;
+            }
+            else {
+                m_root = node;
+                m_lastNode = node;
+            }
+
+            m_size++;
         }
 
         void Pop_Front() {
@@ -149,13 +172,13 @@ class LinkList {
 
             m_root = m_root -> m_next;
 
+            if(m_root != NULL) {
+                m_root -> m_previous = NULL;
+            }
+
             delete temp;
 
             m_size = (m_size == 0 ? m_size : m_size - 1);
-        }
-
-        int GetSize() {
-            return m_size;
         }
 
     private:
@@ -164,9 +187,9 @@ class LinkList {
         LinkNode<T>* m_lastNode;
 };
 
-int main(int argc, char* argv[]) {
-    std::cout << "Double-Ended link list example" << std::endl;
-    std::cout << "Chapter 4: Link Lists" << std::endl;
+int main(int argc, char** argv) {
+    std::cout << "Doubly link list example" << std::endl;
+    std::cout << "Chapter 5: Link Lists" << std::endl;
     std::cout << std::endl;
 
     LinkList<int> lList;
@@ -182,9 +205,16 @@ int main(int argc, char* argv[]) {
 
     LinkIterator<int> it;
 
-    std::cout << "Contents of the link list:";
+    std::cout << "Contents of the link list (forward):";
 
     for(it = lList.Begin(); it != lList.End(); ++it) {
+        std::cout << " " << *it;
+    }
+
+    std::cout << "." << std::endl;
+    std::cout << "Contents of the link list (reverse):";
+
+    for(it = lList.Last(); it != NULL; --it) {
         std::cout << " " << *it;
     }
 
