@@ -24,8 +24,10 @@ class LinkIterator {
 
         ~LinkIterator() {}
 
-        void operator = (LinkNode<T>* node) {
+        LinkIterator<T>& operator = (LinkNode<T>* node) {
             m_node = node;
+
+            return *this;
         }
 
         T& operator * () {
@@ -83,6 +85,7 @@ class LinkList {
             LinkNode<T>* node = new LinkNode<T>;
 
             assert(node != NULL);
+
             node -> m_data = newData;
             node -> m_next = NULL;
 
@@ -126,6 +129,10 @@ class LinkList {
             return m_size;
         }
 
+        LinkNode<T>* Last() {
+            return m_lastNode;
+        }
+
     private:
         int m_size;
         LinkNode<T>* m_root;
@@ -135,15 +142,27 @@ class LinkList {
 template<typename T>
 class Stack {
     public:
-        Stack() {}
+        Stack(int size) {}
         ~Stack() {}
 
         void push(T val) {
             m_container.Push(val);
         }
 
-        void pop() {
+        T pop() {
+            T val = T();
+
+            if(m_container.Last() != NULL) {
+                LinkIterator<T> it;
+
+                it = this -> m_container.Last();
+
+                val = *it;
+            }
+
             m_container.Pop();
+
+            return val;
         }
 
         const T& top() {
@@ -159,7 +178,6 @@ class Stack {
 
     private:
         LinkList<T> m_container;
-        int m_size;
 };
 
 void PrintError(char ch, int index) {
@@ -216,14 +234,14 @@ int main(int argc, char** argv) {
     std::cout << std::endl;
 
     char str[] = {'{', '(', 'a', '[', '5', ']', ')', '}'};
-    int size = strlen(str);
+    int size = 8;
 
     std::cout << "Parsing str." << std::endl;
 
     ParseString(str, size);
 
-    char str2[] = {'{', ')', 'b', '[', '10', ']', ')', '}'};
-    size = strlen(str2);
+    char str2[] = {'{', ')', 'b', '[', '1', ']', ')', '}'};
+    size = 8;
 
     std::cout << "Parsing str2." << std::endl;
 
