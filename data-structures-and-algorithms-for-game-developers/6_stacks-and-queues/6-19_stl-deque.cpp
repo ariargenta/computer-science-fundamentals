@@ -1,7 +1,6 @@
 #include <iostream>
 #include <deque>
 #include <algorithm>
-#include <numeric>
 #include <iterator>
 
 void PrintDeque(std::deque<int>& deq) {
