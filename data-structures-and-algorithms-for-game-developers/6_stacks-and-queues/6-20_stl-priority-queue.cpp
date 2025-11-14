@@ -12,7 +12,11 @@ int main(int argc, char* argv[]) {
         priQueue.push(88 + i);
     }
 
-    std::cout << "Priority queue (int) contents (" << "Size: " << (int)priQueue.size() << ") - ";
+    std::cout
+        << "Priority queue (int) contents ("
+        << "Size: "
+        << (int)priQueue.size()
+        << ") - ";
 
     int size = (int)priQueue.size();
 
