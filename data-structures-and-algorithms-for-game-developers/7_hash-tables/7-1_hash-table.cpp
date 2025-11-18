@@ -4,7 +4,7 @@
 template<typename T>
 class HashItem {
     public:
-        HashItem() : m_key(0) {}
+        HashItem() : m_key(-1) {}
         ~HashItem() {}
 
         int GetKey() {return m_key;}
