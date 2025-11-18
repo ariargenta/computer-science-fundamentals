@@ -151,6 +151,14 @@ int main(int argc, char** argv) {
 
     hashTable.Insert(31, item);
 
+    item = 756;
+
+    hashTable.Insert(42, item);
+
+    item = 432;
+
+    hashTable.Insert(24, item);
+
     item = 124;
 
     hashTable.Insert(51, item);
@@ -158,14 +166,6 @@ int main(int argc, char** argv) {
     item = 786;
 
     hashTable.Insert(12, item);
-
-    item = 235;
-
-    hashTable.Insert(82, item);
-
-    item = 644;
-
-    hashTable.Insert(11, item);
 
     if(hashTable.Find(31, &item)) {
         std::cout << "Item: 31 has a value of " << item << "." << std::endl;
