@@ -420,3 +420,38 @@ class Frustrum {
     private:
         std::vector<Plane> m_frustrum;
 };
+
+class Camera {
+    public:
+        Camera(Vector3D& pos, Vector3D& lookAt) {
+            m_pos = pos;
+            m_lookAt = lookAt;
+        }
+
+        void MoveCamera(Vector3D& direction, float speed) {
+            m_pos += direction * speed;
+            m_lookAt += direction * speed;
+        }
+
+        void RotateView(float angle);
+
+        void SetPosition(Vector3D& pos) {
+            m_pos = pos;
+        }
+
+        void SetLookDirection(Vector3D& at) {
+            m_lookAt = at;
+        }
+
+        Vector3D GetPosition() {
+            return m_pos;
+        }
+
+        Vector3D GetLookDirection() {
+            return m_lookAt;
+        }
+
+    private:
+        Vector3D m_pos;
+        Vector3D m_lookAt;
+};
