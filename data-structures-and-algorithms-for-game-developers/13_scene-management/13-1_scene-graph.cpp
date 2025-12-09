@@ -1,6 +1,12 @@
 #include <iostream>
 #include <cmath>
-#include <gl/glut.h>
+#include <vector>
+
+enum PLANE_STATUS {
+    PLANE_FRONT = 0
+    , PLANE_BACK = 1
+    , PLANE_ON_PLANE = 2
+};
 
 class Vector3D {
     public:
@@ -20,35 +26,67 @@ class Vector3D {
         }
 
         Vector3D operator+(const Vector3D& v2) {
-            return Vector3D(x + v2.x, y + v2.y, z + v2.z);
+            return Vector3D(
+                x + v2.x
+                , y + v2.y
+                , z + v2.z
+            );
         }
 
         Vector3D operator-(const Vector3D& v2) {
-            return Vector3D(x - v2.x, y - v2.y, z - v2.z);
+            return Vector3D(
+                x - v2.x
+                , y - v2.y
+                , z - v2.z
+            );
         }
 
         Vector3D operator/(const Vector3D& v2) {
-            return Vector3D(x / v2.x, y / v2.y, z / v2.z);
+            return Vector3D(
+                x / v2.x
+                , y / v2.y
+                , z / v2.z
+            );
         }
 
         Vector3D operator*(const Vector3D& v2) {
-            return Vector3D(x * v2.x, y * v2.y, z * v2.z);
+            return Vector3D(
+                x * v2.x
+                , y * v2.y
+                , z * v2.z
+            );
         }
 
         Vector3D operator+(float f) {
-            return Vector3D(x + f, y + f, z + f);
+            return Vector3D(
+                x + f
+                , y + f
+                , z + f
+            );
         }
 
         Vector3D operator-(float f) {
-            return Vector3D(x - f, y - f, z - f);
+            return Vector3D(
+                x - f
+                , y - f
+                , z - f
+            );
         }
 
         Vector3D operator/(float f) {
-            return Vector3D(x / f, y / f, z / f);
+            return Vector3D(
+                x / f
+                , y / f
+                , z / f
+            );
         }
 
         Vector3D operator*(float f) {
-            return Vector3D(x * f, y * f, z * f);
+            return Vector3D(
+                x * f
+                , y * f
+                , z * f
+            );
         }
 
         float Dot3(const Vector3D& v) {
@@ -72,7 +110,11 @@ class Vector3D {
         }
 
         Vector3D CrossProduct(const Vector3D& v) {
-            return Vector3D(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
+            return Vector3D(
+                y * v.z - z * v.y
+                , z * v.x - x * v.z
+                , x * v.y - y * v.x
+            );
         }
 
         float x;
@@ -125,7 +167,7 @@ class Plane {
                 max.y = bbMin.y;
             }
 
-            if(normal.Z >= 0.0f) {
+            if(normal.z >= 0.0f) {
                 min.z = bbMin.z;
                 max.z = bbMax.z;
             }
@@ -232,4 +274,149 @@ class BoundingBox {
         Vector3D m_min;
         Vector3D m_max;
         Vector3D m_center;
+};
+
+class Frustrum {
+    public:
+        Frustrum() {}
+
+        void CalculateFrustrum(
+            float angle
+            , float ratio
+            , float near
+            , float far
+            , Vector3D& camPos
+            , Vector3D& lookAt
+            , Vector3D& up
+        ) {
+            Vector3D xVec;
+            Vector3D yVec;
+            Vector3D zVec;
+            Vector3D vecN;
+            Vector3D vecF;
+            Vector3D nearTopLeft;
+            Vector3D nearTopRight;
+            Vector3D nearBottomLeft;
+            Vector3D nearBottomRight;
+            Vector3D farTopLeft;
+            Vector3D farTopRight;
+            Vector3D farBottomLeft;
+            Vector3D farBottomRight;
+
+            float radians = (float)tan((DEG_TO_RAD(angle)) * 0.5);
+            float nearH = near * radians;
+            float nearW = nearH * ratio;
+            float farH = far * radians;
+            float farW = farH * ratio;
+
+            zVec = camPos - lookAt;
+
+            zVec.Normalize();
+
+            xVec = up.CrossProduct(zVec);
+
+            xVec.Normalize();
+
+            yVec = zVec.CrossProduct(xVec);
+
+            vecN = camPos - zVec * near;
+            vecF = camPos - zVec * far;
+
+            nearTopLeft = vecN + yVec * nearH - xVec * nearW;
+            nearTopRight = vecN + yVec * nearH + xVec * nearW;
+            nearBottomLeft = vecN - yVec * nearH - xVec * nearW;
+            nearBottomRight = vecN - yVec * nearH + xVec * nearW;
+            farTopLeft = vecF + yVec * farH - xVec * farW;
+            farTopRight = vecF + yVec * farH + xVec * farW;
+            farBottomLeft = vecF - yVec * farH - xVec * farW;
+            farBottomRight = vecF - yVec * farH + xVec * farW;
+
+            m_frustrum.clear();
+
+            Plane plane;
+
+            plane.CreatePlaneFromTri(nearTopRight, nearTopLeft, farTopLeft);
+            AddPlane(plane);
+            plane.CreatePlaneFromTri(nearBottomLeft, nearBottomRight, farBottomRight);
+            AddPlane(plane);
+            plane.CreatePlaneFromTri(nearTopLeft, nearBottomLeft, farBottomLeft);
+            AddPlane(plane);
+            plane.CreatePlaneFromTri(nearBottomRight, nearTopRight, farBottomRight);
+            AddPlane(plane);
+            plane.CreatePlaneFromTri(nearTopLeft, nearTopRight, nearBottomRight);
+            AddPlane(plane);
+            plane.CreatePlaneFromTri(farTopRight, farTopLeft, farBottomLeft);
+            AddPlane(plane);
+        }
+
+        void AddPlane(Plane& pl) {
+            m_frustrum.push_back(pl);
+        }
+
+        bool isPointVisible(float x, float y, float z) {
+            for(int i = 0; i < (int)m_frustrum.size(); ++i) {
+                if(m_frustrum[i].GetDistance(x, y, z) < 0) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        bool isSphereVisible(float x, float y, float z, float radius) {
+            float distance = 0;
+
+            for(int i = 0; i < (int)m_frustrum.size(); ++i) {
+                distance = m_frustrum[i].GetDistance(x, y, z);
+
+                if(distance < -radius) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        bool isBoxVisible(Vector3D min, Vector3D max) {
+            if(isPointVisible(min.x, min.y, min.z)) {
+                return true;
+            }
+            
+            if(isPointVisible(max.x, min.y, min.z)) {
+                return true;
+            }
+
+            if(isPointVisible(min.x, max.y, min.z)) {
+                return true;
+            }
+
+            if(isPointVisible(max.x, max.y, min.z)) {
+                return true;
+            }
+
+            if(isPointVisible(min.x, min.y, max.z)) {
+                return true;
+            }
+
+            if(isPointVisible(max.x, min.y, max.z)) {
+                return true;
+            }
+
+            if(isPointVisible(min.x, max.y, max.z)) {
+                return true;
+            }
+
+            if(isPointVisible(max.x, max.y, max.z)) {
+                return true;
+            }
+
+            return false;
+        }
+
+        int GetTotalPlanes() {
+            return (int)m_frustrum.size();
+        }
+
+    private:
+        std::vector<Plane> m_frustrum;
 };
