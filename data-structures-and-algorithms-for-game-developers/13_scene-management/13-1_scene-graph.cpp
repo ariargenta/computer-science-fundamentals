@@ -521,3 +521,91 @@ class Node {
         Node* m_prev;
         Node* m_child;
 };
+
+class TransformationNode : public Node {
+    public:
+        TransformationNode(Vector3D& pos) : m_pos(pos) {}
+        ~TransformationNode() {}
+
+        void Process() {
+            glPushMatrix();
+            glTranslatef(m_pos.x, m_pos.y, m_pos.z);
+
+            if(m_child != NULL) {
+                m_child -> Process();
+            }
+
+            glPopMatrix();
+
+            if(m_next != NULL) {
+                m_next -> Process();
+            }
+        }
+
+    protected:
+        Vector3D m_pos;
+};
+
+class SphereNode : public Node {
+    public:
+        SphereNode(double rd, int slices, int stacks, float r, float g, float b) : m_radius(rd), m_slices(slices), m_stacks(stacks), m_red(r), m_green(g), m_blue(b) {}
+
+        ~SphereNode() {}
+
+        void Process() {
+            glColor3f(m_red, m_green, m_blue);
+            glutSolidSphere(m_radius, m_slices, m_stacks);
+
+            if(m_child != NULL) {
+                m_child -> Process();
+            }
+
+            if(m_next != NULL) {
+                m_next -> Process();
+            }
+        }
+
+    protected:
+        double m_radius;
+        int m_slices;
+        int m_stacks;
+        float m_red;
+        float m_green;
+        float m_blue;
+};
+
+class SceneGraph {
+    public:
+        SceneGraph() {
+            m_root = NULL;
+        }
+
+        ~SceneGraph() {
+            Release();
+        }
+
+        void Release() {
+            if(m_root != NULL) {
+                delete m_root;
+
+                m_root = NULL;
+            }
+        }
+
+        void AddNode(Node* node) {
+            if(m_root == NULL) {
+                m_root = new Node;
+            }
+
+            m_root -> AddChild(node);
+        }
+
+        void Process() {
+            if(m_root != NULL) {
+                m_root -> Process();
+            }
+        }
+
+    private:
+        Node* m_root;
+};
