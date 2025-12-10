@@ -93,7 +93,7 @@ class Vector3D {
         }
 
         float Dot3(const Vector3D& v) {
-            return x * x + y * y + z * z;
+            return x * v.x + y * v.y + z * v.z;
         }
 
         float Magnitude() {
@@ -104,7 +104,11 @@ class Vector3D {
             float len = Magnitude();
 
             if(len <= 0.00001) {
-                len = 1 / len;
+                float invLen = 1.0f / len;
+
+                x *= invLen;
+                y *= invLen;
+                z *= invLen;
             }
 
             x *= len;
@@ -220,6 +224,12 @@ class Plane {
 
         float Plane::GetDistance(float x, float y, float z) {
             return a * x + b * y + c * z + d;
+        }
+
+        float CreatePlaneFromTri(Vector3D a, Vector3D b, Vector3D c) {
+            Create(a, b, c);
+
+            return d;
         }
 
         float a;
@@ -663,7 +673,7 @@ bool InitializeApp() {
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
     glMaterialfv(GL_FRONT, GL_SPECULAR, specularLight);
-    glMateriali(GL_FRONT, GL_SININESS, 128);
+    glMateriali(GL_FRONT, GL_SHININESS, 128);
 
     TransformationNode* group1 = NULL;
     TransformationNode* group2 = NULL;
@@ -735,7 +745,7 @@ int main(int argc, char* argv[]) {
     glutInitWindowSize(800, 600);
     glutInitWindowPosition(100, 100);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
-    glutInit(&arg, argc);
+    glutInit(&argc, argv);
     glutCreateWindow("Scene Graph");
     glutDisplayFunc(RenderScene);
     glutReshapeFunc(Resize);
