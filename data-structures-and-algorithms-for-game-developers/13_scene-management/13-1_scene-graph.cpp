@@ -306,7 +306,7 @@ class Frustrum {
             Vector3D farBottomLeft;
             Vector3D farBottomRight;
 
-            float radians = (float)tan((DEG_TO_RAD(angle)) * 0.5);
+            float radians = (float)tan(((angle * M_PI) / 180) * 0.5);
             float nearH = near * radians;
             float nearW = nearH * ratio;
             float farH = far * radians;
@@ -551,7 +551,21 @@ class TransformationNode : public Node {
 
 class SphereNode : public Node {
     public:
-        SphereNode(double rd, int slices, int stacks, float r, float g, float b) : m_radius(rd), m_slices(slices), m_stacks(stacks), m_red(r), m_green(g), m_blue(b) {}
+        SphereNode(
+            double rd
+            , int slices
+            , int stacks
+            , float r
+            , float g
+            , float b
+        ) :
+            m_radius(rd)
+            , m_slices(slices)
+            , m_stacks(stacks)
+            , m_red(r)
+            , m_green(g)
+            , m_blue(b)
+        {}
 
         ~SphereNode() {}
 
