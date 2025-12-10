@@ -222,8 +222,12 @@ class Plane {
             return PLANE_ON_PLANE;
         }
 
-        float Plane::GetDistance(float x, float y, float z) {
-            return a * x + b * y + c * z + d;
+        float GetDistance(const Vector3D& position) {
+            return(GetDistance(position.x, position.y, position.z));
+        }
+
+        float GetDistance(float x, float y, float z) {
+            return (x * a + y * b + z * c + d);
         }
 
         float CreatePlaneFromTri(Vector3D a, Vector3D b, Vector3D c) {
