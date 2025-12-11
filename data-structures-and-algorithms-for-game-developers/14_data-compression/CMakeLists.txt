@@ -7,4 +7,10 @@ find_package(GLEW REQUIRED)
 
 add_executable(texture-compression 14-4_texture-compression.cpp)
 
+configure_file(
+    ${CMAKE_SOURCE_DIR}/image.dds
+    ${CMAKE_CURRENT_BINARY_DIR}/image.dds
+    COPYONLY
+)
+
 target_link_libraries(texture-compression OpenGL::GL OpenGL::GLU GLEW::GLEW FreeGLUT::freeglut)

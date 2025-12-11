@@ -325,6 +325,17 @@ int main(int argc, char** argv) {
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
     glutInit(&argc, argv);
     glutCreateWindow("Texture Compression");
+
+    GLenum glewErr = glewInit();
+
+    if (glewErr != GLEW_OK) {
+        printf("GLEW init failed: %s\n", glewGetErrorString(glewErr));
+
+        return 1;
+    }
+
+    printf("GLEW initialized. OpenGL version: %s\n", glGetString(GL_VERSION));
+
     glutDisplayFunc(RenderScene);
     glutReshapeFunc(Resize);
     glutKeyboardFunc(KeyDown);
