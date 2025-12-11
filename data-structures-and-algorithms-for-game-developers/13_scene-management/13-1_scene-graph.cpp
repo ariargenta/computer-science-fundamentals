@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include <iostream>
 #include <stdio.h>
 #include <cmath>
@@ -58,6 +60,14 @@ class Vector3D {
                 , y * v2.y
                 , z * v2.z
             );
+        }
+
+        Vector3D& operator+=(const Vector3D& v) {
+            x += v.x;
+            y += v.y;
+            z += v.z;
+
+            return *this;
         }
 
         Vector3D operator+(float f) {
@@ -299,9 +309,9 @@ class Frustrum {
 
         void CalculateFrustrum(
             float angle
-            , float ratio
-            , float near
-            , float far
+            , float aspectRatio
+            , float nearDist
+            , float farDist
             , Vector3D& camPos
             , Vector3D& lookAt
             , Vector3D& up
@@ -320,11 +330,11 @@ class Frustrum {
             Vector3D farBottomLeft;
             Vector3D farBottomRight;
 
-            float radians = (float)tan(((angle * M_PI) / 180) * 0.5);
-            float nearH = near * radians;
-            float nearW = nearH * ratio;
-            float farH = far * radians;
-            float farW = farH * ratio;
+            float radians = (float)tan(((angle * M_PI) / 180.0f) * 0.5f);
+            float nearH = nearDist * radians;
+            float nearW = nearH * aspectRatio;
+            float farH = farDist * radians;
+            float farW = farH * aspectRatio;
 
             zVec = camPos - lookAt;
 
@@ -336,8 +346,8 @@ class Frustrum {
 
             yVec = zVec.CrossProduct(xVec);
 
-            vecN = camPos - zVec * near;
-            vecF = camPos - zVec * far;
+            vecN = camPos - zVec * nearDist;
+            vecF = camPos - zVec * farDist;
 
             nearTopLeft = vecN + yVec * nearH - xVec * nearW;
             nearTopRight = vecN + yVec * nearH + xVec * nearW;
