@@ -3,11 +3,17 @@
 (defun average (x y)
     (/ (+ x y) 2))
 
+(defun absoluteValue (x)
+    (cond ((> x 0) x)
+        ((= x 0) 0)
+        ((< x 0) (- x))))
+
 (defun improve (guess x)
     (average guess (/ x guess)))
 
 (defun good-enoughp (guess x)
-    (< (abs (- (square guess) x)) 0.001))
+    (< (absoluteValue (- (square guess) x))
+        0.001))
 
 (defun sqrt-iter (guess x)
     (if (good-enoughp guess x)
