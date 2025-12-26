@@ -1,4 +1,4 @@
-;; 1.1.4 Compound Procedures
+;; Compound Procedures
 ; (define (⟨name⟩ ⟨formal parameters⟩)
 ;     ⟨body⟩)
 (defun square (x) (* x x))

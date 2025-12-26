@@ -1,4 +1,4 @@
-;; 1.1.6 - Conditional Expressions and Predicates
+;; Conditional Expressions and Predicates
 ; (cond (⟨predicate 1⟩ ⟨consequent expression 1⟩)
 ;     (⟨p_2⟩ ⟨e_2⟩)  -> clauses
 ;     ...
