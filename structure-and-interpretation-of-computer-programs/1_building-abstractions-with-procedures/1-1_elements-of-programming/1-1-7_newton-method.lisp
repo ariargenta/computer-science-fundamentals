@@ -11,12 +11,12 @@
 (defun improve (guess x)
     (average guess (/ x guess)))
 
-(defun good-enoughp (guess x)
+(defun good-enough-p (guess x)
     (< (absoluteValue (- (square guess) x))
         0.001))
 
 (defun sqrt-iter (guess x)
-    (if (good-enoughp guess x)
+    (if (good-enough-p guess x)
         guess
         (sqrt-iter (improve guess x) x)))
 
