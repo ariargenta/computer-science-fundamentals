@@ -47,3 +47,15 @@
 (defun squareRoot (x)
     (newton-method
      (lambda (y) (- (square y) x)) 1.0))
+
+;; Abstractios and first-class procedures
+(defun fixed-point-of-transform (g transform guess)
+    (fixed-point (funcall transform g) guess))
+
+(defun square-root-of (x)
+    (fixed-point-of-transform
+     (lambda (y) (/ x y)) #'average-damp 1.0))
+
+(defun squareRootOf (x)
+    (fixed-point-of-transform
+    (lambda (y) (- (square y) x)) #'newton-transform 1.0))
