@@ -29,3 +29,38 @@
 
 (princ ((lambda (x y z) (+ x y (square z)))
             1 2 3)) (terpri)
+
+; (let ((⟨var_1⟩ ⟨exp_1⟩)
+;       (⟨var_2⟩ ⟨exp_2⟩)
+;           ...
+;       (⟨var_n⟩ ⟨exp_n⟩))
+;   ⟨body⟩)
+(defun f (x y)
+    (labels ((f-helper (a b)
+        (+ (* x (square a))
+           (* y b)
+           (* a b))))
+    (f-helper (+ 1 (* x y))
+                (- 1 y))))
+
+(defun fn (x y)
+    (let ((a (+ 1 (* x y)))
+          (b (- 1 y)))
+        (+ (* x (square a))
+           (* y b)
+           (* a b))))
+
+(defun funct (x y)
+    ((lambda (a b)
+         (+ (* x (square a))
+            (* y b)
+            (* a b)))
+     (+ 1 (* x y))
+     (- 1 y)))
+
+(defun fun (x y)
+    (let ((a (+ 1 (* x y)))
+          (b (- 1 y)))
+        (+ (* x (square a))
+           (* y b)
+           (* a b))))
