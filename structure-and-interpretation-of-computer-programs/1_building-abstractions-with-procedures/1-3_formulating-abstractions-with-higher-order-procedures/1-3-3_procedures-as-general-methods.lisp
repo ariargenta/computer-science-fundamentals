@@ -1,3 +1,4 @@
+;; Finding roots of equations
 (defun average (x y)
     (/ (+ x y) 2.0))
 
@@ -28,3 +29,25 @@
 (princ (half-interval-method #'sin 2.0 4.0)) (terpri)
 
 (princ (half-interval-method (lambda (x) (- (* x x x) (* 2 x) 3)) 1.0 2.0)) (terpri)
+
+;;Finding fiexd points of functions
+(defparameter tolerance 0.00001)
+
+(defun fixed-point (f first-guess)
+    (labels ((close-enough-p (v1 v2)
+                             (< (abs (- v1 v2)) tolerance))
+             (try (guess)
+                  (let ((next (funcall f guess)))
+                      (if (close-enough-p guess next)
+                          next
+                          (try next)))))
+        (try first-guess)))
+
+(princ (fixed-point #'cos 1.0)) (terpri)
+(princ (fixed-point (lambda (y) (+ (funcall #'sin y) (funcall #'cos y))) 1.0)) (terpri)
+
+; Average damping
+(defun square-root (x)
+    (fixed-point (lambda (y)
+                         (average y (/ x y)))
+                 1.0))
