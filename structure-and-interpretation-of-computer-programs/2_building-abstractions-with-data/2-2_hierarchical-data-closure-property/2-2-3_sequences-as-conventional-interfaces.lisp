@@ -1,4 +1,4 @@
-;;; Sequences as conventional interfaces (signal-flow processing)
+;;; Signal-flow processing
 ;; Computation as data flowing through composable stages
 ; Sequence abstraction localizes data-structure dependencies, allowing processing modules to combine freely.
 (defun square (x) (* x x))
