@@ -86,3 +86,33 @@
     (accumulate #'* 1 (mapcar #'square (filter #'oddp sequence))))
 
 (princ (product-of-squares-of-odd-elements (list 1 2 3 4 5))) (terpri)
+
+;; Nested Mappings
+(defun flatmap (proc seq)
+    (accumulate #'append nil (mapcar proc seq)))
+
+(defun prime-sum-p (pair)
+    (prime-p (+ (car pair) (cadr pair))))
+
+(defun make-pair-sum (pair)
+    (list (car pair) (cadr pair) (+ (car pair) (cadr pair))))
+
+(defun prime-sum-pairs (n)
+    (mapcar #'make-pair-sum
+            (filter #'prime-sum-p (flatmap
+                                 (lambda (i)
+                                     (mapcar (lambda (j) (list i j))
+                                             (enumerate-interval 1 (- i 1))))
+                                 (enumerate-interval 1 n)))))
+
+(defun permutations (s)
+    (if (null s)
+        (list nil)
+        (flatmap (lambda (x)
+                     (mapcar (lambda (p) (cons x p))
+                             (permutations (remove x s))))
+                 s)))
+
+(defun removeItem (item sequence)
+    (filter (lambda (x) (not (= x item)))
+            sequence))
