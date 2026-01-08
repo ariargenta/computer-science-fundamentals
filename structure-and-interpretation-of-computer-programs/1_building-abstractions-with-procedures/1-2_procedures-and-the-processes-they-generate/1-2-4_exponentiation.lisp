@@ -1,3 +1,5 @@
+(defun square (x) (* x x))
+
 ; Recursive definition
 ; b^n = b * b^(n - 1),
 ; b^0 = 1
@@ -25,5 +27,5 @@
 
 (defun fast-exp (b n)
     (cond ((= n 0) 1)
-          ((is-even-p n) (square (fast-expt b (/ n 2))))
-          (t (* b (fast-expt b (- n 1))))))
+          ((is-even-p n) (square (fast-exp b (/ n 2))))
+          (t (* b (fast-exp b (- n 1))))))
