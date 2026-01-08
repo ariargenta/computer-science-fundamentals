@@ -29,3 +29,20 @@
     (cond ((= n 0) 1)
           ((is-even-p n) (square (fast-exp b (/ n 2))))
           (t (* b (fast-exp b (- n 1))))))
+
+(defun pascal (j n)
+    (cond ((= j 0) 1)
+          ((= j n) 1)
+          (t (+ (pascal (- j 1) (- n 1))
+                        (pascal j (- n 1))))))
+
+(defun factorial (n)
+    (labels ((iter (product counter)
+        (if (> counter n)
+            product
+            (iter (* counter product)
+                  (+ counter 1)))))
+        (iter 1 1)))
+
+(defun pascal-triangle (j n)
+    (/ (factorial n) (* (factorial (- n j)) (factorial j))))
