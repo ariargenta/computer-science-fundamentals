@@ -1,3 +1,37 @@
+;; Compound data
+(defun make-point (x y)
+    (cons x y))
+
+(defun point-x (point)
+    (car point))
+
+(defun point-y (point)
+    (cdr point))
+
+(defun make-seg (pt1 pt2)
+    (cons pt1 pt2))
+
+(defun start-point (seg)
+    (car seg))
+
+(defparameter p1 (make-point 1 2))
+(defparameter p2 (make-point 4 3))
+(defparameter s1 (make-seg p1 p2))
+
+(defun stretch-point (pt scale)
+    (make-point (* scale (point-x pt))
+                (* scale (point-y pt))))
+
+(defun stretch-seg (seg sc)
+    (make-seg (stretch-point (start-pt seg) sc)
+              (stretch-point (end-pt seg) sc)))
+
+(defun seg-length (seg)
+    (sqrt (+ (square (- (point-x (start-point seg))
+                        (point-x (end-point seg))))
+             (square (- (point-y (start-point seg))
+                        (point-y (end-point seg)))))))
+
 (defun add-interval (x y)
     (make-interval (+ (lower-bound x) (lower-bound y))
                    (+ (upper-bound x) (upper-bound y))))
@@ -34,6 +68,6 @@
 
 (defun par2 (r1 r2)
     (let ((one (make-interval 1 1)))
-        (div-internal
+        (div-interval
          one (add-interval (div-interval one r1)
                            (div-interval one r2)))))

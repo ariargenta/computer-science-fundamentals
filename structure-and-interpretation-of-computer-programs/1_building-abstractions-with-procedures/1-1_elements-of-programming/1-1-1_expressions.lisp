@@ -1,4 +1,17 @@
-;; 1.1.1 - Expressions
+;; Language elements
+; - Primitives
+;     - Primitive data
+;     - Primitive procedures
+; - Means of combination
+;     - Procedure application
+;     - Compound data
+; - Means of abstraction
+;     - Naming
+;     - Compound procedures
+;         - Block structure
+;         - Higher order procedures
+;     - Conventional interfaces (lists)
+;     - Data abstraction
 (princ "The value of a combination is obtained by applying the procedure specified by the operator to the arguments that are the values of the operands") (terpri)
 (princ "([operator] [operand x] [operand y])") (terpri)
 (princ "(+ 137 349)") (terpri)
