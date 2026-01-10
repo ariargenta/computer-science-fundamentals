@@ -21,6 +21,12 @@
 ; 6. Concrete representation & implementation
 ;   Could have alternative implementations
 
+;;; Trees
+;; Type definition:
+; List<C> = Pair<C, List<C>> | null
+; Tree<C> = List<Tree<C>> | Leaf<C>
+; Leaf<C> = C
+
 (defparameter x (cons (list 1 2) (list 3 4)))
 
 ;           ((1 2) 3 4)
@@ -44,8 +50,18 @@
 (defun count-leaves (x)
     (cond ((null x) 0)      ; The order of the first two clauses matters
           ((not (consp x)) 1)
-          (t (+ (count-leaves (car x))
+          (t (+ (count-leaves (car x))  ; The recursive structure of the procedure will tend to reflect the recursive structure of the data structure itself
                 (count-leaves (cdr x))))))
+
+(defun leaf-p (x)
+    (not (consp x)))
+
+(defun countLeaves (tree)
+    (cond ((null tree) 0)   ; Base case
+          ((leaf-p tree) 1) ; Base case
+          (t                ; Recursive case
+              (+ (countLeaves (car tree))
+                 (countLeaves (cdr tree))))))
 
 (princ (length x)) (terpri)
 (princ (count-leaves x)) (terpri)
@@ -68,3 +84,19 @@
                     (scaleTree sub-tree factor)
                     (* sub-tree factor)))
             tree))
+
+(defun tree-map (proc tree)
+    (if (null tree)
+        nil
+        (if (leaf-p tree)
+            (funcall proc tree)
+            (cons (tree-map proc (car tree))
+                  (tree-map proc (cdr tree))))))
+
+(defun tree-manip (leaf-op init merge tree)
+    (if (null tree)
+        init
+            (if (leaf-p tree)
+                (funcall leaf-op tree)
+                (funcall merge (tree-manip leaf-op init merge (car tree))
+                               (tree-manip leaf-op init merge (cdr tree))))))
