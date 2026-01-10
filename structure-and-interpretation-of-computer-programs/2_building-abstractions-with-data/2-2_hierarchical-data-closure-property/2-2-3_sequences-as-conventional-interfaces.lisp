@@ -30,6 +30,13 @@
 ; Enumerate (generate), Filter (select), Map (transform), Accumulate (combine)
 (princ (mapcar #'square (list 1 2 3 4 5))) (terpri)
 
+(defun filtering (pred lst)
+    (cond ((null lst) nil)
+          ((funcall pred (first lst))
+              (adjoin (first lst)
+                      (filter pred (rest lst))))
+          (t (filtering pred (rest lst)))))
+
 (defun filter (predicate sequence)
     (cond ((null sequence) nil)
           ((funcall predicate (car sequence))
@@ -38,6 +45,28 @@
           (t (filter predicate (cdr sequence)))))
 
 (princ (filter #'oddp (list 1 2 3 4 5))) (terpri)
+
+(defun add-up (lst)
+    (if (null lst)
+        0
+        (+ (first lst)
+           (add-up (rest lst)))))
+
+(defun mult-all (lst)
+    (if (null lst)
+        1
+        (* (first lst)
+           (mult-all (rest lst)))))
+
+(defun fold-right (op init lst)
+    (if (null lst)
+        init
+        (funcall op (first lst)
+            (fold-right op init (rest lst)))))
+
+(defun addUp (lst)
+    (fold-right + 0 lst))
+
 
 (defun accumulate (op initial sequence)
     (if (null sequence)
@@ -86,6 +115,18 @@
     (accumulate #'* 1 (mapcar #'square (filter #'oddp sequence))))
 
 (princ (product-of-squares-of-odd-elements (list 1 2 3 4 5))) (terpri)
+
+; Using common patterns over data structures
+(defun generate-interval (a b)
+    (if (> a b)
+        nil
+        (cons a (generate-interval (+ 1 a) b))))
+
+(defun summatory (f start inc terms)
+    (fold-right +
+                0
+                (mapping (lambda (x) (funcall f (+ start (* x inc))))
+                         (generate-interval 0 terms))))
 
 ;; Nested Mappings
 (defun flatmap (proc seq)

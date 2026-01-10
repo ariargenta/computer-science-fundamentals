@@ -137,6 +137,30 @@
         (cons (car list1) (appendList (cdr list1) list2))))
 
 ;; Mapping over lists
+(defun square-list (lst)
+    (if (null lst)
+        nil
+        (adjoin (square (first lst))
+                (square-list (rest lst)))))
+
+(defun double-list (lst)
+    (if (null lst)
+        nil
+        (adjoin (* 2 (first lst))
+                (double-list (rest lst)))))
+
+(defun mapping (proc lst)
+    (if (null lst)
+        nil
+        (adjoin (funcall proc (first lst))
+                (mapping proc (rest lst)))))
+
+(defun squareList (lst)
+    (mapping #'square lst))
+
+(defun doubleList (lst)
+    (mapping (lambda (x) (* 2 x)) lst))
+
 (defun scale-list (items factor)
     (if (null items)
         nil
