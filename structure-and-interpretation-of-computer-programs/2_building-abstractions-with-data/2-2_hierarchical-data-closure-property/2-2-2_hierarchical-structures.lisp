@@ -1,3 +1,26 @@
+; Groups - User knows groups are also lists
+; Lists - User knows list are also pairs
+; Pairs - Contract for cons, car, cdr
+; Specified the implementations for lists and groups: Weak data abstraction
+
+;; Pair abstraction
+; 1. Constructor
+;   cons: A, B -> Pair<A, B>;  A & B = anytype
+;   (cons <x> <y>) ==> <p>
+; 2. Accessors
+;   (car <p>); car: Pair<A, B> -> A
+;   (cdr <p>); cdr: Pair<A, B> -> B
+; 3. Contract
+;   (car (cons <x> <y>)) ==> <x>
+;   (cdr (cons <x> <y>)) ==> <y>
+; 4. Operations
+;   pair?: anytype -> boolean
+;   (pair? <p>)
+; 5. Abstraction barrier
+;   Say nothing about implementation
+; 6. Concrete representation & implementation
+;   Could have alternative implementations
+
 (defparameter x (cons (list 1 2) (list 3 4)))
 
 ;           ((1 2) 3 4)

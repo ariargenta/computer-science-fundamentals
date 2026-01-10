@@ -162,3 +162,8 @@
 ; - There are conventional ways of grouping elements together into compound data structures
 ; - The procedures that manipulate these data structures tend to have a form that mimics the actual data structure
 ; - Compound data structures rely on an inductive format in much the same way recursive procedures do. We can often deduce properties of compound data structures in analogy to our analysis of recursive procedures by using induction
+
+; - Pair<A, B>
+;   A compound data structure formed by a cons pair, in which the first element is of type A, and the second of type B
+; - List<A> = Pair<A, List<A> or nil>
+;   A compound data structure that is recursively defined as a pair, whose first element is of type A, and whose second element is either a list of type A or the empty list

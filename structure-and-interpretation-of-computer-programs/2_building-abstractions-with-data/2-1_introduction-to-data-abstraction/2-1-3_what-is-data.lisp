@@ -14,9 +14,9 @@
 ; - Need a contract between the "glue" and the "unglue"
 
 ;; Constructor
-; cons: A, B -> A X B
+; cons: A, B -> A × B
 ; cons: A, B -> Pair<A, B>
-; (cons <x-exp> <y-exp> ==> <P>)
+; (cons <x-exp> <y-exp> ==> <p>)
 (defun construct (x y)
     (lambda (m)
         (cond ((= m 0) x)

@@ -23,6 +23,27 @@
             b)
        dx))
 
+(defun summatory (term a next b)
+    (if (> a b)
+        0
+        (+ (funcall term a)
+           (summatory term
+                      (funcall next a)
+                      next b))))
+
+(defun sum-integers1 (a b)
+    (sum (lambda (x) x)
+         a
+         (lambda (x) (+ x 1))
+         b))
+
+(defun sum-squares1 (a b)
+    (funcall #'sum #'square a (lambda (x) (+ x 1)) b))
+
+(defun pi-sum1 (a b)
+    (sum (lambda (x) (/ 1 (square x))) a
+         (lambda (x) (+ x 2)) b))
+
 ; Equivalent declaration
 (defun plus4 (x) (+ x 4))
 (defparameter plus-four (lambda (x) (+ x 4)))

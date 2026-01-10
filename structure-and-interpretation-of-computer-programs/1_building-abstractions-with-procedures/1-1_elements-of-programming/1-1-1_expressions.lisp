@@ -1,4 +1,5 @@
 ;; Language elements
+; We want to collect a taxonomy of expression types
 ; - Primitives
 ;     - Primitive data
 ;     - Primitive procedures
