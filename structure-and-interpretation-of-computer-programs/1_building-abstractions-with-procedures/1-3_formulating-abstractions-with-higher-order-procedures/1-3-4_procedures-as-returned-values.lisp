@@ -21,12 +21,16 @@
 (princ (funcall (average-damp #'square) 10)) (terpri)
 
 (defun square-root (x)
-    (fixed-point (average-damp (lambda (y) (/ x y)))
-                 1.0))
+    (fixed-point
+     (average-damp 
+      (lambda (y) (/ x y)))
+     1.0))
 
 (defun cube-root (x)
-    (fixed-point (average-damp (lambda (y) (/ x (square y))))
-                 1.0))
+    (fixed-point
+     (average-damp
+      (lambda (y) (/ x (square y))))
+     1.0))
 
 ;; Newton method
 (defparameter dx 1.0d-5)
@@ -48,7 +52,7 @@
     (newton-method
      (lambda (y) (- (square y) x)) 1.0))
 
-;; Abstractios and first-class procedures
+;; Abstractions and first-class procedures
 (defun fixed-point-of-transform (g transform guess)
     (fixed-point (funcall transform g) guess))
 
@@ -59,3 +63,26 @@
 (defun squareRootOf (x)
     (fixed-point-of-transform
     (lambda (y) (- (square y) x)) #'newton-transform 1.0))
+
+(defun integral (f a b n)
+    (let ((delta (/ (- b a) n)))
+        (* (sum f a delta n) delta)))
+
+(defun arctan (a)
+    (integral (lambda (x) (/ 1 (+ 1 (square x))))
+              0 a 100))
+
+(defun close-p (u v) (< (abs (- u v)) 0.0001d0))
+
+(defparameter higher-order-procedure (lambda (f x) (+ 2 (funcall f (+ x 1)))))
+
+; - Use type variables
+;   compose : (A -> B), (C -> A), C -> B
+; - Meaning of type variables:
+;   All places where a given type variable appears must matche when you fill in the actual operand values
+; - The constraints are:
+;   - f and g must be functions of one argument
+;   - The argument type of g matches the type of x
+;   - The argument type of f matches the result type of g
+;   - The result type of compose is the result type of f
+(defparameter compose (lambda (f g x) (funcall f (funcall g x))))
