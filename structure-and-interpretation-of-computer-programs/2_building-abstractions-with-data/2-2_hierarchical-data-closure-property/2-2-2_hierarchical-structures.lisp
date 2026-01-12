@@ -27,6 +27,9 @@
 ; Tree<C> = List<Tree<C>> | Leaf<C>
 ; Leaf<C> = C
 
+;; The closure property
+; The results of a combination could be treated as a primitive and thus used as input to another combination 
+
 (defparameter x (cons (list 1 2) (list 3 4)))
 
 ;           ((1 2) 3 4)

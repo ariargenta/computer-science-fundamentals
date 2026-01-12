@@ -1,4 +1,4 @@
-;; 1.1.2 - Naming and the Environment
+;; Naming and the Environment
 (princ "Variables") (terpri)
 
 (defvar \*size\* 2)

@@ -1,4 +1,4 @@
-;; 1.1.3 - Evaluating Combinations
+;; Evaluating Combinations
 (princ (* (+ 2 (* 4 6)) (+ 3 5 7))) (terpri)
 
 ;                            390
