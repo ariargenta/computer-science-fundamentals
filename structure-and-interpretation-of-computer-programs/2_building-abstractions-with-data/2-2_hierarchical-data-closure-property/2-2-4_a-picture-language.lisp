@@ -1,10 +1,13 @@
+;; Turning batteries ON
 (ql:quickload :vecto)
 
+;; APU fire test
 (defpackage #:vecto-examples
     (:use #:cl #:vecto))
 
 (in-package #:vecto-examples)
 
+;; APU master switch ON
 (defun radiant-lambda (file)
     (with-canvas (:width 512 :height 512)
         (let ((font (get-font "times.ttf"))
@@ -74,6 +77,112 @@
         (fill-and-stroke)
         (save-png file)))
 
-(radiant-lambda "radiant-lambda.png")
-(star-clipping "star-clipping.png")
-(feedlike-icon "feedlike-icon.png")
+;; Starting APU
+(defun flipped-pairs (painter)
+    (let ((combine4 (square-of-four identity flip-vert
+                                    identity flip-vert)))
+        (combine4 painter)))
+
+(defun right-split (painter n)
+    (if (= n 0)
+        painter
+        (let ((smaller (right-split painter (- n 1))))
+            (beside painter (below smaller smaller)))))
+
+(defun up-split (painter n)
+    (if (= n 0)
+        painter
+        (let ((smaller (right-split painter (- n 1))))
+            (below painter (beside smaller smaller)))))
+
+(defun corner-split (painter n)
+    (if (= n 0)
+        painter
+        (let ((up (up-split painter (- n 1)))
+              (right (right-split painter (- n 1))))
+            (let ((top-left (beside up up))
+                  (bottom-right (below right right))
+                  (corner (corner-split painter (- n 1))))
+                (beside (below painter top-left)
+                        (below bottom-right corner))))))
+
+(defun square-limit (painter n)
+    (let ((combine4 (square-of-four flip-horiz identity
+                                    rotate180 flip-vert)))
+        (combine4 (corner-split painter n))))
+
+;; Higher-order operations
+(defun square-of-four (tl tr bl br)
+    (lambda (painter)
+        (let ((top (beside (funcall tl painter) (funcall tr painter)))
+              (bottom (beside (funcall bl painter) (funcall br painter))))
+            (below bottom top))))
+
+;; Frames
+(defun frame-coord-map (frame)
+    (lambda (v)
+        (add-vect
+         (origin-frame frame)
+         (add-vect (scale-vect (xcor-vect v) (edge1-frame frame))
+                   (scale-vect (ycor-vect v) (edge2-frame frame))))))
+
+;; Painters
+(defun segments->painter (segment-list)
+    (lambda (frame)
+        (let ((m (frame-coord-map frame)))
+            (for-each
+             (lambda (segment)
+                 (draw-line
+                  (funcall m (start-segment segment))
+                  (funcall m (end-segment segment))))
+             segment-list))))
+
+(defun transform-painter (painter origin corner1 corner2)
+    (lambda (frame)
+        (let ((m (frame-coord-map frame)))
+            (let ((new-origin (m origin)))
+                (painter (make-frame
+                          new-origin
+                          (sub-vect (m corner1) new-origin)
+                          (sub-vect (m corner2) new-origin)))))))
+
+(defun flip-vert (painter)
+    (transform-painter painter
+                       (make-vect 0.0 1.0)      ; new origin
+                       (make-vect 1.0 1.0)      ; new end of edge1
+                       (make-vect 0.0 0.0)))    ; new end of edge2
+
+(defun shrink-to-upper-right (painter)
+    (transform-painter
+     painter (make-vect 0.5 0.5)
+     (make-vect 1.0 0.5) (make-vect 0.5 1.0)))
+
+(defun rotate90 (painter)
+    (transform-painter painter
+                       (make-vect 1.0 0.0)
+                       (make-vect 1.0 1.0)
+                       (make-vect 0.0 0.0)))
+
+(defun squash-inwards (painter)
+    (transform-painter painter
+                       (make-vect 0.0 0.0)
+                       (make-vect 0.65 0.35)
+                       (make-vect 0.35 0.65)))
+
+(defun beside (painter1 painter2)
+    (let ((split-point (make-vect 0.5 0.0)))
+        (let ((paint-left
+               (transform-painter
+                painter1
+                (make-vect 0.0 0.0)
+                split-point
+                (make-vect 0.0 1.0)))
+              (paint-right
+               (transform-painter
+                painter2
+                split-point
+                (make-vect 1.0 0.0)
+                (make-vect 0.5 1.0))))
+            (lambda (frame)
+                (funcall paint-left frame)
+                (funcall paint-right frame)))))
