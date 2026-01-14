@@ -95,6 +95,9 @@
         (let ((smaller (right-split painter (- n 1))))
             (below painter (beside smaller smaller)))))
 
+(defun split (procedure1 procedure2)
+    )
+
 (defun corner-split (painter n)
     (if (= n 0)
         painter
@@ -186,3 +189,75 @@
             (lambda (frame)
                 (funcall paint-left frame)
                 (funcall paint-right frame)))))
+
+(defun +vect (v1 v2)
+    (make-vect (+ (xcor v1) (xcor v2))
+               (+ (ycor v1) (ycor v2))))
+
+(defun scale-vect (vect factor)
+    (make-vect (* factor (xcor vect))
+               (* factor (ycor vect))))
+
+(defun -vect (v1 v2)
+    (+vect v1 (scale-vect v2 -1)))
+
+(defun rotate-vect (v angle)
+    (let ((c (cos angle))
+          (s (sin angle)))
+        (make-vect (- (* c (xcor v))
+                      (* s (ycor v)))
+                   (+ (* c (ycor v))
+                      (* s (xcor v))))))
+
+(defun make-picture (seglist)
+    (lambda (rect)
+        (for-each
+         (lambda (segment)
+             (let ((b (start-segment segment))
+                   (e (end-segment segment)))
+                 (draw-line rect
+                            (xcor b)
+                            (ycor b)
+                            (xcor e)
+                            (ycor e))))
+         seglist)))
+
+(defun together (pict1 pict2)
+    (lambda (rect)
+        (pict1 rect)
+        (pict2 rect)))
+
+(defun above (pict1 pict2 a)
+    (rotate270
+     (beside
+      (rotate90 pict1)
+      (rotate90 pict2)
+      a)))
+
+(defun flip (pict)
+    (lambda (rect)
+        (pict (make-rectangle
+               (+vect (origin rect) (horiz rect))
+               (scale-vect (horiz rect) -1)
+               (vert rect)))))
+
+(defun up-push (pict n)
+    (if (= n 0)
+        pict
+        (above (up-push pict (- n 1))
+               pict
+               0.25)))
+
+(defun corner-push (pict n)
+    (if (= n 0)
+        pict
+        (above
+         (beside
+          (up-push pict n)
+          (corner-push pict (- n 1))
+          0.75)
+         (beside
+          pict
+          (right-push pict (- n 1))
+          0.75)
+         0.25)))
