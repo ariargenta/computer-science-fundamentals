@@ -1,87 +1,212 @@
-;; Turning batteries ON
+#-quicklisp
+(let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp"
+                                       (user-homedir-pathname))))
+    (when (probe-file quicklisp-init)
+          (load quicklisp-init)))
+
 (ql:quickload :vecto)
 
-;; APU fire test
-(defpackage #:vecto-examples
+(defpackage #:a-picture-language
     (:use #:cl #:vecto))
 
-(in-package #:vecto-examples)
+(in-package #:a-picture-language)
 
-;; APU master switch ON
-(defun radiant-lambda (file)
-    (with-canvas (:width 512 :height 512)
-        (let ((font (get-font "times.ttf"))
-              (step (/ pi 7)))
-            (set-font font 40)
-            (translate 45 45)
-            (draw-centered-string 0 -10 #(#x3BB))
-            (set-rgb-stroke 1 0 0)
-            (centered-circle-path 0 0 35)
-            (stroke)
-            (set-rgba-stroke 0 0 1.0 0.5)
-            (set-line-width 4)
-            (dotimes (i 14)
-                (with-graphics-state
-                    (rotate (* i step))
-                    (move-to 30 0)
-                    (line-to 40 0)
-                    (stroke)))
-            (save-png file))))
+(defun make-vect (x y)
+    (cons x y))
 
-(defun star-clipping (file)
-    (with-canvas (:width 200 :height 200)
-        (let ((size 100)
-              (angle 0)
-              (step (* 2 (/ (* pi 2) 5))))
-            (translate size size)
-            (move-to 0 size)
-            (dotimes (i 5)
-                (setf angle (+ angle step))
-                (line-to (* (sin angle) size)
-                         (* (cos angle) size)))
-            (even-odd-clip-path)
-            (end-path-no-op)
-            (flet ((circle (distance)
-                           (set-rgba-fill distance 0 0 (- 1.0 distance))
-                           (centered-circle-path 0 0 (* size distance))
-                           (fill-path)))
-                (loop for i downfrom 1.0 by 0.05
-                          repeat 20 do
-                          (circle i)))
-            (save-png file))))
+(defun xcor-vect (v)
+    (car v))
 
-(defun feedlike-icon (file)
-    (with-canvas (:width 100 :height 100)
-        (set-rgb-fill 1.0 0.65 0.3)
-        (rounded-rectangle 0 0 100 100 10 10)
-        (fill-path)
-        (set-rgb-fill 1.0 1.0 1.0)
-        (centered-circle-path 20 20 10)
-        (fill-path)
-        (flet ((quarter-circle (x y radius)
-                               (move-to (+ x radius) y)
-                               (arc x y radius 0 (/ pi 2))))
-            (set-rgb-stroke 1.0 1.0 1.0)
-            (set-line-width 15)
-            (quarter-circle 20 20 30)
-            (stroke)
-            (quarter-circle 20 20 60)
-            (stroke))
-        (rounded-rectangle 5 5 90 90 7 7)
-        (set-gradient-fill 50 90
-                           1.0 1.0 1.0 0.7
-                           50 20
-                           1.0 1.0 1.0 0.0)
-        (set-line-width 2)
-        (set-rgba-stroke 1.0 1.0 1.0 0.1)
-        (fill-and-stroke)
-        (save-png file)))
+(defun ycor-vect (v)
+    (cdr v))
 
-;; Starting APU
-(defun flipped-pairs (painter)
-    (let ((combine4 (square-of-four identity flip-vert
-                                    identity flip-vert)))
-        (combine4 painter)))
+(defun add-vect (v1 v2)
+    (make-vect (+ (xcor-vect v1)
+                  (xcor-vect v2))
+               (+ (ycor-vect v1)
+                  (ycor-vect v2))))
+
+(defun sub-vect (v1 v2)
+    (make-vect (- (xcor-vect v1)
+                  (xcor-vect v2))
+               (- (ycor-vect v1)
+                  (ycor-vect v2))))
+
+(defun scale-vect (s v)
+    (make-vect (* s (xcor-vect v))
+               (* s (ycor-vect v))))
+
+(defun make-segment (start end)
+    (cons start end))
+
+(defun start-segment (segment)
+    (car segment))
+
+(defun end-segment (segment)
+    (cdr segment))
+
+(defun make-frame (origin edge1 edge2)
+    (list origin edge1 edge2))
+
+(defun origin-frame (f)
+    (car f))
+
+(defun edge1-frame (f)
+    (cadr f))
+
+(defun edge2-frame (f)
+    (caddr f))
+
+(defun frame-coord-map (frame)
+    (lambda (v)
+        (add-vect
+         (origin-frame frame)
+         (add-vect (scale-vect (xcor-vect v)
+                               (edge1-frame frame))
+                   (scale-vect (ycor-vect v)
+                               (edge2-frame frame))))))
+
+(defun segments->painter (segment-list)
+    (lambda (frame)
+        (let ((coord-map (frame-coord-map frame)))
+            (dolist (segment segment-list)
+                (let ((start (funcall coord-map (start-segment segment)))
+                      (end (funcall coord-map (end-segment segment))))
+                    (vecto:move-to (xcor-vect start) (ycor-vect start))
+                    (vecto:line-to (xcor-vect end) (ycor-vect end))
+                    (vecto:stroke))))))
+
+(defun transform-painter (painter origin corner1 corner2)
+    (lambda (frame)
+        (let ((m (frame-coord-map frame)))
+            (let ((new-origin (funcall m origin)))
+                (funcall painter
+                 (make-frame new-origin
+                             (sub-vect (funcall m corner1) new-origin)
+                             (sub-vect (funcall m corner2) new-origin)))))))
+
+(defun beside (painter1 painter2)
+    (let ((split-point (make-vect 0.5 0.0)))
+        (let ((paint-left
+               (transform-painter painter1
+                                  (make-vect 0.0 0.0)
+                                  split-point
+                                  (make-vect 0.0 1.0)))
+              (paint-right
+               (transform-painter painter2
+                                  split-point
+                                  (make-vect 1.0 0.0)
+                                  (make-vect 0.5 1.0))))
+            (lambda (frame)
+                (funcall paint-left frame)
+                (funcall paint-right frame)))))
+
+(defun flip-vert (painter)
+    (transform-painter painter
+                       (make-vect 0.0 1.0)
+                       (make-vect 1.0 1.0)
+                       (make-vect 0.0 0.0)))
+
+(defun flip-horiz (painter)
+    (transform-painter painter
+                       (make-vect 1.0 0.0)
+                       (make-vect 0.0 0.0)
+                       (make-vect 1.0 1.0)))
+
+(defparameter outline-frame-painter
+              (segments->painter
+               (list
+                (make-segment (make-vect 0 0)
+                              (make-vect 0 1))
+                (make-segment (make-vect 0 1)
+                              (make-vect 1 1))
+                (make-segment (make-vect 1 1)
+                              (make-vect 1 0))
+                (make-segment (make-vect 1 0)
+                              (make-vect 0 0)))))
+
+(defparameter x-painter
+              (segments->painter
+               (list
+                (make-segment (make-vect 0 0)
+                              (make-vect 1 1))
+                (make-segment (make-vect 0 1)
+                              (make-vect 1 0)))))
+
+(defparameter diamond-painter
+              (segments->painter
+               (list
+                (make-segment (make-vect 0 0.5)
+                              (make-vect 0.5 0))
+                (make-segment (make-vect 0.5 0)
+                              (make-vect 1 0.5))
+                (make-segment (make-vect 1 0.5)
+                              (make-vect 0.5 1))
+                (make-segment (make-vect 0.5 1)
+                              (make-vect 0 0.5)))))
+
+(defparameter wave-painter
+              (segments->painter
+               (list
+                (make-segment (make-vect 0.5 0.4)
+                              (make-vect 0.6 0))
+                (make-segment (make-vect 0.5 0.4)
+                              (make-vect 0.4 0))
+                (make-segment (make-vect 0.3 0)
+                              (make-vect 0.35 0.4))
+                (make-segment (make-vect 0.35 0.4)
+                              (make-vect 0.3 0.7))
+                (make-segment (make-vect 0.3 0.7)
+                              (make-vect 0.2 0.6))
+                (make-segment (make-vect 0.2 0.6)
+                              (make-vect 0 0.8))
+                (make-segment (make-vect 0 0.9)
+                              (make-vect 0.2 0.7))
+                (make-segment (make-vect 0.2 0.7)
+                              (make-vect 0.3 0.75))
+                (make-segment (make-vect 0.3 0.75)
+                              (make-vect 0.4 0.75))
+                (make-segment (make-vect 0.4 0.75)
+                              (make-vect 0.35 0.9))
+                (make-segment (make-vect 0.35 0.9)
+                              (make-vect 0.4 1))
+                (make-segment (make-vect 0.5 1)
+                              (make-vect 0.55 0.9))
+                (make-segment (make-vect 0.55 0.9)
+                              (make-vect 0.5 0.75))
+                (make-segment (make-vect 0.5 0.75)
+                              (make-vect 0.6 0.75))
+                (make-segment (make-vect 0.6 0.75)
+                              (make-vect 1 0.45))
+                (make-segment (make-vect 1 0.3)
+                              (make-vect 0.6 0.5))
+                (make-segment (make-vect 0.6 0.5)
+                              (make-vect 0.7 0)))))
+
+(defun rotate-180 (painter)
+    (flip-vert painter))
+
+(defun rotate-270 (painter)
+    (transform-painter painter
+                       (make-vect 1.0 0.0)
+                       (make-vect 1.0 1.0)
+                       (make-vect 0.0 0.0)))
+
+(defun below (painter1 painter2)
+    (let ((split-point (make-vect 0.0 0.5)))
+        (let ((paint-bottom
+               (transform-painter painter1
+                                  (make-vect 0.0 0.0)
+                                  (make-vect 1.0 0.0)
+                                  split-point))
+              (paint-top
+               (transform-painter painter2
+                                  split-point
+                                  (make-vect 1.0 0.5)
+                                  (make-vect 0.0 1.0))))
+            (lambda (frame)
+                (funcall paint-bottom frame)
+                (funcall paint-top frame)))))
 
 (defun right-split (painter n)
     (if (= n 0)
@@ -92,11 +217,8 @@
 (defun up-split (painter n)
     (if (= n 0)
         painter
-        (let ((smaller (right-split painter (- n 1))))
+        (let ((smaller (up-split painter (- n 1))))
             (below painter (beside smaller smaller)))))
-
-(defun split (procedure1 procedure2)
-    )
 
 (defun corner-split (painter n)
     (if (= n 0)
@@ -110,154 +232,26 @@
                         (below bottom-right corner))))))
 
 (defun square-limit (painter n)
-    (let ((combine4 (square-of-four flip-horiz identity
-                                    rotate180 flip-vert)))
-        (combine4 (corner-split painter n))))
+    (let ((quarter (corner-split painter n)))
+        (let ((half (beside (flip-horiz quarter) quarter)))
+            (below (flip-vert half) half))))
 
-;; Higher-order operations
-(defun square-of-four (tl tr bl br)
-    (lambda (painter)
-        (let ((top (beside (funcall tl painter) (funcall tr painter)))
-              (bottom (beside (funcall bl painter) (funcall br painter))))
-            (below bottom top))))
+(defun below-transformations (painter1 painter2)
+    (flip-horiz (flip-vert (rotate-270 (beside (rotate-270 painter1) (rotate-270 painter2))))))
 
-;; Frames
-(defun frame-coord-map (frame)
-    (lambda (v)
-        (add-vect
-         (origin-frame frame)
-         (add-vect (scale-vect (xcor-vect v) (edge1-frame frame))
-                   (scale-vect (ycor-vect v) (edge2-frame frame))))))
+(defparameter unit-frame (make-frame (make-vect 0 500) (make-vect 500 0) (make-vect 0 -500)))
 
-;; Painters
-(defun segments->painter (segment-list)
-    (lambda (frame)
-        (let ((m (frame-coord-map frame)))
-            (for-each
-             (lambda (segment)
-                 (draw-line
-                  (funcall m (start-segment segment))
-                  (funcall m (end-segment segment))))
-             segment-list))))
+(defun render (painter filename &optional (size 512))
+    (let ((frame (make-frame (make-vect 0 0)
+                             (make-vect size 0)
+                             (make-vect 0 size))))
+        (vecto:with-canvas (:width size :height size)
+            (vecto:set-rgb-fill 1 1 1)
+            (vecto:rectangle 0 0 size size)
+            (vecto:fill-path)
+            (vecto:set-rgb-stroke 0 0 0)
+            (vecto:set-line-width 1)
+            (funcall painter frame)
+            (vecto:save-png filename))))
 
-(defun transform-painter (painter origin corner1 corner2)
-    (lambda (frame)
-        (let ((m (frame-coord-map frame)))
-            (let ((new-origin (m origin)))
-                (painter (make-frame
-                          new-origin
-                          (sub-vect (m corner1) new-origin)
-                          (sub-vect (m corner2) new-origin)))))))
-
-(defun flip-vert (painter)
-    (transform-painter painter
-                       (make-vect 0.0 1.0)      ; new origin
-                       (make-vect 1.0 1.0)      ; new end of edge1
-                       (make-vect 0.0 0.0)))    ; new end of edge2
-
-(defun shrink-to-upper-right (painter)
-    (transform-painter
-     painter (make-vect 0.5 0.5)
-     (make-vect 1.0 0.5) (make-vect 0.5 1.0)))
-
-(defun rotate90 (painter)
-    (transform-painter painter
-                       (make-vect 1.0 0.0)
-                       (make-vect 1.0 1.0)
-                       (make-vect 0.0 0.0)))
-
-(defun squash-inwards (painter)
-    (transform-painter painter
-                       (make-vect 0.0 0.0)
-                       (make-vect 0.65 0.35)
-                       (make-vect 0.35 0.65)))
-
-(defun beside (painter1 painter2)
-    (let ((split-point (make-vect 0.5 0.0)))
-        (let ((paint-left
-               (transform-painter
-                painter1
-                (make-vect 0.0 0.0)
-                split-point
-                (make-vect 0.0 1.0)))
-              (paint-right
-               (transform-painter
-                painter2
-                split-point
-                (make-vect 1.0 0.0)
-                (make-vect 0.5 1.0))))
-            (lambda (frame)
-                (funcall paint-left frame)
-                (funcall paint-right frame)))))
-
-(defun +vect (v1 v2)
-    (make-vect (+ (xcor v1) (xcor v2))
-               (+ (ycor v1) (ycor v2))))
-
-(defun scale-vect (vect factor)
-    (make-vect (* factor (xcor vect))
-               (* factor (ycor vect))))
-
-(defun -vect (v1 v2)
-    (+vect v1 (scale-vect v2 -1)))
-
-(defun rotate-vect (v angle)
-    (let ((c (cos angle))
-          (s (sin angle)))
-        (make-vect (- (* c (xcor v))
-                      (* s (ycor v)))
-                   (+ (* c (ycor v))
-                      (* s (xcor v))))))
-
-(defun make-picture (seglist)
-    (lambda (rect)
-        (for-each
-         (lambda (segment)
-             (let ((b (start-segment segment))
-                   (e (end-segment segment)))
-                 (draw-line rect
-                            (xcor b)
-                            (ycor b)
-                            (xcor e)
-                            (ycor e))))
-         seglist)))
-
-(defun together (pict1 pict2)
-    (lambda (rect)
-        (pict1 rect)
-        (pict2 rect)))
-
-(defun above (pict1 pict2 a)
-    (rotate270
-     (beside
-      (rotate90 pict1)
-      (rotate90 pict2)
-      a)))
-
-(defun flip (pict)
-    (lambda (rect)
-        (pict (make-rectangle
-               (+vect (origin rect) (horiz rect))
-               (scale-vect (horiz rect) -1)
-               (vert rect)))))
-
-(defun up-push (pict n)
-    (if (= n 0)
-        pict
-        (above (up-push pict (- n 1))
-               pict
-               0.25)))
-
-(defun corner-push (pict n)
-    (if (= n 0)
-        pict
-        (above
-         (beside
-          (up-push pict n)
-          (corner-push pict (- n 1))
-          0.75)
-         (beside
-          pict
-          (right-push pict (- n 1))
-          0.75)
-         0.25)))
+(render (square-limit wave-painter 4) "wave.png")
