@@ -13,8 +13,11 @@
                 :accessor angle)))
 
 (defgeneric real-part (z))
+
 (defgeneric imag-part (z))
+
 (defgeneric magnitude (z))
+
 (defgeneric angle (z))
 
 (defmethod magnitude ((z rectangular-complex))
