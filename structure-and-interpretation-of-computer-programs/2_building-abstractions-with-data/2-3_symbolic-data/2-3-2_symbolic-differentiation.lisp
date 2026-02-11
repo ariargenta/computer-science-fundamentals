@@ -1,3 +1,8 @@
+; Expr = SimpleExpr | CompoundExpr
+; SimpleExpr = number | symbol
+; CompoundExpr = A list of three elements where the first element is either + or *
+; = pair<(+|*), pair<Expr, pair<Expr, null>>>
+
 (defun variable-p (x) (symbolp x))
 
 (defun same-variable-p (v1 v2)
@@ -44,3 +49,5 @@
                              (multiplicand exp))))
           (t
               (error "Unknown expression type: DERIV ~A" exp))))
+
+; By isolating data representations from data use it becomes much easier to make changes in the behaviour of our system without requiring detailed and intertwined coding changes
