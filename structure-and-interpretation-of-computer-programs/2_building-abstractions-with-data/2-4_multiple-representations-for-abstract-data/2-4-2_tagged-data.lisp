@@ -1,3 +1,6 @@
+;; Tagged data
+; - Attach an identifying symbol to all nontrivial data values
+; - Always check the symbol before operating on the data
 (defun square (x) (* x x))
 
 (defun attach-tag (type-tag contents) (cons type-tag contents))
