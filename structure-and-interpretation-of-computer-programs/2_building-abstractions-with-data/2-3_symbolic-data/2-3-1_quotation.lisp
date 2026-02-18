@@ -1,6 +1,7 @@
 ;; A data abstraction consist of:
 ; - Constructors
 ; - Selectors
+; - Mutators
 ; - Operations
 ; - Contract
 
