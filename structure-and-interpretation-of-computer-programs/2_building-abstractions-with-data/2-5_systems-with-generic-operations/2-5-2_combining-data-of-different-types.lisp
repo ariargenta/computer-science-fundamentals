@@ -35,12 +35,12 @@
                     (error "No method for these types ~A ~A" op type-tags))))))
 
 ;; Functional programming
-; (defparameter x 10)   - Expression has same value each time it is evaluated in same scope as binding
+; (defparameter x 10)       - Expression has same value each time it is evaluated in same scope as binding
 ; (+ x 5) ==> 15
 ; . . .
 ; (+ x 5) ==> 15
 ; ...
-; (setf (car x) 94)           - Expression "value" depends on when it is evaluated
+; (setf (car x) 94)         - Expression "value" depends on when it is evaluated
 ; . . .
 ; (+ x 5) ==> 99
 ;
