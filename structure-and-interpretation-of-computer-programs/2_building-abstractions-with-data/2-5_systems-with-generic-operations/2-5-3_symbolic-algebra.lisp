@@ -1,14 +1,72 @@
-(defun add-poly (p1 p2)
-    (if (same-variable-p (variable p1) (variable p2))
-        (make-poly (variable p1)
-                   (add-terms (term-list p1) (term-list p2)))
-        (error "Polys not in same var: ADD-POLY ~A" (list p1 p2))))
+(defun install-polynomial-package ()
+    (let ((the-empty-termlist '())
+          (polynomial-tag 'polynomial))
+        (labels ((make-poly (variables term-list) (cons variables term-list))
+                 (variables (p) (car p))
+                 (term-list (p) (cdr p))
+                 (variable-p (x) (symbolp x))
+                 (same-variable-p (v1 v2) (and (variable-p v1) (variable-p v2) (eq v1 v2)))
+                 (adjoin-term (term term-list)
+                              (if (equals-zero-p (coeff term))
+                                  term-list
+                                  (cons term term-list)))
+                 (first-term (term-list) (car term-list))
+                 (rest-terms (term-list) (cdr term-list))
+                 (empty-termlist-p (term-list) (null term-list))
+                 (make-term (order coeff) (list order coeff))
+                 (order (term) (car term))
+                 (coeff (term) (cadr term)))
+            (add-poly (p1 p2)
+                      (if (same-variable-p (variable p1) (variable p2))
+                          (make-poly (variable p1)
+                                     (add-terms (term-list p1) (term-list p2)))
+                          (error "Polys not in same var: ADD-POLY ~A" (list p1 p2))))
+            (add-terms (L1 L2)
+                       (cond ((empty-termlist-p L1) L2)
+                             ((empty-termlist-p L2) L1)
+                             (t
+                                 (let ((t1 (first-term L1))
+                                       (t2 (first-term L2)))
+                                     (cond ((> (order t1) (order t2))
+                                               (adjoin-term
+                                                t1 (add-terms (rest-terms L1) L2)))
+                                           ((< (order t1) (order t2))
+                                               (adjoin-term
+                                                t2 (add-terms L1 (rest-terms L2))))
+                                           (t
+                                               (adjoin-term
+                                                (make-term (order t1)
+                                                           (add (coeff t1) (coeff t2)))
+                                                (add-terms (rest-terms L1)
+                                                           (rest-terms L2)))))))))
+            (mul-poly (p1 p2)
+                      (if (same-variable-p (variables p1) (variables p2))
+                          (make-poly (variables p1)
+                                     (mul-terms (term-list p1) (term-list p2)))
+                          (error "Polys not in same var: MUL-POLY ~A" (list p1 p2))))
+            (mul-terms (L1 L2)
+                       (if (empty-termlist-p L1)
+                           (the-empty-termlist)
+                           (add-terms (mul-term-by-all-terms (first-term L1) L2)
+                                      (mul-terms (rest-terms L1) L2))))
+            (mul-term-by-all-terms (t1 L)
+                                   (if (empty-termlist-p L)
+                                       (the-empty-termlist)
+                                       (let ((t2 (first-term L)))
+                                           (adjoin-term
+                                            (make-term (+ (order t1) (order t2))
+                                                       (mul (coeff t1) (coeff t2)))
+                                            (mul-term-by-all-terms t1 (rest-terms L))))))
+            (tag (p) (cons polynomial-tag p))
+            )))
 
-(defun mul-poly (p1 p2)
-    (if (same-variable-p (variable p1) (variable p2))
-        (make-poly (variable p1)
-                   (mul-terms (term-list p1) (term-list p2)))
-        (error "Polys not in same var: MUL-POLY ~A" (list p1 p2))))
+(defun make-polynomial (var terms)
+    ((get #'make #'polynomial) var terms))
+
+(defun gcd-terms (a b)
+    (if (empty-termlist-p b)
+        a
+        (gcd-terms b (remainder-terms a b))))
 
 ;;; Environment Model
 ; A precise, completely mechanical description of:
@@ -84,5 +142,5 @@
 
 (defun cb () (make-counter 0))
 
-; Environment diagrams get complicated quickly, rules are meat fro the computer to follow, not to help humans
+; Environment diagrams get complicated quickly, rules are meant for the computer to follow, not to help humans
 ; A lambda inside a procedure body captures the frame that was active when the lambda was evaluated, this effect can be used to store local state
