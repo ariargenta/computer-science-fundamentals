@@ -188,8 +188,3 @@
               (nset-front-ptr q
                               (cdr (front-ptr q)))
               q)))
-
-; Mutation is a powerful idea
-; - Enables new and efficient data structures
-; - Can have surprising side effects
-; - Breaks our "functional" programming (substitution) model
