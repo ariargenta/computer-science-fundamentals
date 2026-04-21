@@ -70,7 +70,7 @@
         (error "Front called with an empty queue: ~A" queue)
         (car (front-ptr queue))))
 
-(defun ninsert-queue (queue item)
+(defun n-insert-queue (queue item)
     (let ((new-pair (cons item nil)))
         (cond ((funcall #'empty_queue-p queue)
                   (nset-front-ptr queue new-pair)
@@ -81,7 +81,7 @@
                   (nset-rear-ptr queue new-pair)
                   queue))))
 
-(defun ndelete-queue (queue)
+(defun n-delete-queue (queue)
     (cond ((empty_queue-p queue)
               (error "Delete called with an empty queue: ~A" queue))
           (t
