@@ -165,7 +165,7 @@
                       (terpri "Torpedo goes off!")
                       (remove-from-universe torp))
              (move ()
-                   (setf torpedo-position
+                   (setf torpedo-position (add-vect torpedo-position torpedo-velocity))
                        ;...
                        )))
         (lambda (msg &rest args)
@@ -176,4 +176,4 @@
                   ((eq msg 'DISPLAY) (draw
                                       ;...
                                       ))
-                  (t (error "No method ~A" msg))))))
+                  (t (error "No method ~A" msg)))))
