@@ -58,12 +58,9 @@
     (let ((root-part (make-root-object self)))
         (lambda (message)
             (case message
-                ((TYPE)
-                 (lambda () (type-extend 'named-object root-part)))
-                ((NAME)
-                 (lambda () name))
-                ((CHANGE-NAME)
-                 (lambda (newname) (setf name newname)))
+                ((TYPE) (lambda () (type-extend 'named-object root-part)))
+                ((NAME) (lambda () name))
+                ((CHANGE-NAME) (lambda (newname) (setf name newname)))
                 (t (get-method message root-part))))))
 
 ;; Instance creation
@@ -220,6 +217,69 @@
 ; - Abstract view: class and instance diagrams
 ; - User view: how to define classes, create instances
 ; - Implementation view: how we layer notion of object, classes, instances, and inheritance on top of standard language
+;
+;; Differences between "is-a" or inheritance relationships and "has-a" or local variable relationships
+; - Classes in our system
+;   - May have local state and local methods. Local state can:
+;       - Include primitive data
+;       - Indicate relationships with other objects
+;   - May inherit state and methods
+;       - By way of internal handlers generated thru "make-<superclass>" parts
+; - Instances in our system
+;   - Have a starting "instance" (self) object in environment model
+;   - Instance contains a series of message/state handlers for each class in inheritance chain
+
+(defun create_named_object (name)
+    (create-instance #'make_named_object name))
+
+(defun make_named_object (self name)
+    (let ((root-part (make-root-object self)))
+        (lambda (message)
+            (case message
+                ((TYPE) (lambda () (type-extend 'named-object root-part)))
+                ((NAME) (lambda () name))
+                ((t (get-method message root-part)))))))
+
+(defun names-of (objects)
+    (map (lambda (x) (ask x 'NAME)) objects))
+
+(defun create_person (name)
+    (create-instance #'make_person name))
+
+(defun make_person (self name)
+    (let ((named-part (make_named_object self name))
+          (mother nil)
+          (father nil)
+          (children nil))
+        (lambda (message)
+            (case message
+                ((TYPE) (lambda () (type-extend 'person named-part)))
+                ((SAY) (lambda (stuff) (terpri stuff)))
+                ((MOTHER) (lambda () mother))
+                ((FATHER) (lambda () father))
+                ((CHILDREN) (lambda () children))
+                ((N-SET-MOTHER) (lambda (mom) (setf mother mom)))
+                ((N-SET-FATHER) (lambda (dad) (setf father dad)))
+                ((ADD-CHILD) (lambda (child)
+                                 (setf children (cons child children))
+                                 child))
+                (t (get-method message named-part))))))
+
+(defun create-mother (name)
+    (create-instance #'make-mother name))
+
+(defun make-mother (self name)
+    (let ((person-part (make-person self name)))
+        (lambda (message)
+            (case message
+                ((TYPE) (lambda () (type-extend 'mother person-part)))
+                ((HAVE-CHILD) (lambda (dad child-name)
+                                  (let ((child (create_person child-name)))
+                                      (ask child 'n-set-mother self)
+                                      (ask child 'n-set-father dad)
+                                      (ask self 'add-child child)
+                                      (ask dad 'add-child child))))
+                (t (get-method message person-part))))))
 
 ;;; Queue Data Abstraction (Last In, Last Out)
 ; - Constructor:
