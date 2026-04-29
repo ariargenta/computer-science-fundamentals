@@ -4,23 +4,21 @@
     (:shadow "EVAL" "APPLY"))
 
 (in-package "CAP4")
-(defun eval (exp env)
-    (cond ((self-evaluating-p exp) exp)
-          ((variable-p exp) (lookup-variable-value exp env))
-          ((quoted-p exp) (text-of-quotation exp))
-          ((assignment-p exp) (eval-assignment exp env))
-          ((definition-p exp) (eval-definition exp env))
-          ((if-p exp) (eval-if exp env))
-          ((lambda-p exp) (make-procedure (lambda-parameters exp)
-                                          (lambda-body exp)
-                                          env))
-          ((begin-p exp)
-              (eval-sequence (begin-actions exp) env))
-          ((cond-p exp) (eval (expand-cond exp) env))
-          ((application-p exp)
-              (apply (eval (operator exp) env)
-                      (list-of-values (operands exp) env)))
-          (t (error "Unknown expression type: EVAL ~A" exp))))
+
+(defun eval (exp env) (funcall (analyse exp) env))
+
+(defun analyse (exp)
+    (cond ((self-evaluating-p exp) (analyse-self-evaluating exp))
+          ((variable-p exp) (analyse-variable exp env))
+          ((quoted-p exp) (analyse-quoted exp))
+          ((assignment-p exp) (analyse-assignment exp))
+          ((definition-p exp) (analyse-definition exp))
+          ((if-p exp) (analyse-if exp))
+          ((lambda-p exp) (analyse-lambda exp))
+          ((begin-p exp) (analyse-sequence (begin-actions exp)))
+          ((cond-p exp) (analyse (expand-cond exp)))
+          ((application-p exp) (analyse-application exp))
+          (t (error "Unknown expression type: ANALYSE ~A" exp))))
 
 (defun apply (procedure arguments)
     (cond ((primitive-procedure-p procedure)
@@ -313,5 +311,75 @@
                      (procedure-body object)
                      '<procedure-env>))
         (princ object)))
+
+;;; 4.1.7 - Separating Syntactic Analysis from Execution
+
+(defun analyse-self-evaluating (exp)
+    (lambda (env) (declare (ignore env)) exp))
+
+(defun analyse-quoted (exp)
+    (let ((qval (text-of-quotation exp)))
+        (lambda (env) (declare (ignore env)) qval)))
+
+(defun analyse-variable (exp) (lambda (env) (lookup-variable-value exp env)))
+
+(defun analyse-assignment (exp)
+    (let ((var (assignment-variable exp))
+          (vproc (analyse (assignment-value exp))))
+        (lambda (env)
+            (set-variable-value var (funcall vproc env) env)
+            'ok)))
+
+(defun analyse-definition (exp)
+    (let ((var (definition-variable exp))
+          (vproc (analyse (definition-value exp))))
+        (lambda (env)
+            (define-variable var (funcall vproc env) env)
+            'ok)))
+
+(defun analyse-if (exp)
+    (let ((pproc (analyse (if-predicate exp)))
+          (cproc (analyse (if-consequent exp)))
+          (aproc (analyse (if-alternative exp))))
+        (lambda (env) (if (true-p (funcall pproc env))
+                          (funcall cproc env)
+                          (funcall aproc env)))))
+
+(defun analyse-lambda (exp)
+    (let ((vars (lambda-parameters exp))
+          (bproc (analyse-sequence (lambda-body exp))))
+        (lambda (env) (make-procedure vars bproc env))))
+
+(defun analyse-sequence (exps)
+    (labels ((sequentially (proc1 proc2)
+                           (lambda (env) (funcall proc1 env) (funcall proc2 env)))
+             (looping (first-proc rest-procs)
+                      (if (null rest-procs)
+                          first-proc
+                          (looping (sequentially first-proc (car rest-procs))
+                                   (cdr rest-procs)))))
+        (let ((procs (map 'list #'analyse exps)))
+            (if (null procs) (error "Emptyy sequence: ANALYSE"))
+            (looping (car procs) (cdr procs)))))
+
+(defun analyse-application (exp)
+    (let ((fproc (analyse (operator exp)))
+          (aprocs (map 'list #'analyse (operands exp))))
+        (lambda (env)
+            (execute-application
+             (funcall fproc env)
+             (map 'list (lambda (aproc) (funcall aproc env))
+                     aprocs)))))
+
+(defun execute-application (proc args)
+    (cond ((primitive-procedure-p proc)
+              (apply-primitive-procedure proc args))
+          ((compound-procedure-p proc)
+              (funcall (procedure-body proc)
+                       (extend-environment
+                        (procedure-parameters proc)
+                        args
+                        (procedure-environment proc))))
+          (t (error "Unknown procedure type: EXECUTE-APPLICATION ~A" proc))))
 
 (defparameter the-global-environment (setup-environment))
