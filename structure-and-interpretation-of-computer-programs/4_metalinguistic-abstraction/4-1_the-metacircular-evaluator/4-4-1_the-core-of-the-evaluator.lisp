@@ -59,3 +59,9 @@
                         (eval (assignment-value exp) env)
                         env)
     'ok)
+
+(defun eval-definition (exp env)
+    (define-variable (definition-variable exp)
+                     (eval (definition-value exp) env)
+                     env)
+    'ok)
