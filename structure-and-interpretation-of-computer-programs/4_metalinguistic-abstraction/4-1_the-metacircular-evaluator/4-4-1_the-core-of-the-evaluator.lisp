@@ -253,3 +253,65 @@
                              ((eq var (car vars)) (setf vals val))
                              (t (scan (cdr vars) (cdr vals))))))
             (scan (frame-variables frame) (frame-values frame)))))
+
+;;; 4.1.4 - Running the Evaluator as a Program
+
+(defun setup-environment ()
+    (let ((initial-env
+           (extend-environment (primitive-procedure-names)
+                               (primitive-procedure-objects)
+                               the-empty-environment)))
+        (define-variable 'true t initial-env)
+        (define-variable 'false nil initial-env)
+        initial-env))
+
+(defparameter the-global-environment (setup-environment))
+
+(defun primitive-procedure-p (proc) (tagged-list-p proc 'procedure))
+
+(defun primitive-implementation (proc) (cadr proc))
+
+(defun primitive-procedures ()
+    (list (list 'car #'car)
+          (list 'cdr #'cdr)
+          (list 'cons #'cons)
+          (list 'null #'null)
+          ; ⟨more primitives⟩
+          ))
+
+(defun primitive-procedure-names () (mapcar #'car (primitive-procedures)))
+
+(defun primitive-procedure-objects ()
+    (mapcar (lambda (proc) (list 'primitive (cadr proc)))
+            (primitive-procedures)))
+
+(defun apply-primitive-procedure (proc args)
+    (apply-in-underlying-lisp
+     (primitive-implementation proc) args))
+
+(defun apply-in-underlying-lisp (function &rest arguments) (apply function arguments))
+
+(defparameter input-prompt ";;; M-Eval input: ")
+(defparameter output-prompt ";;; M-Eval value: ")
+
+(defun driver-loop ()
+    (prompt-for-input input-prompt)
+    (let ((input (read)))
+        (let ((output (eval input the-global-environment)))
+            (announce-output output-prompt)
+            (user-print output)))
+    (driver-loop))
+
+(defun prompt-for-input (string)
+    (terpri) (terpri) (princ string) (terpri))
+
+(defun announce-output (string)
+    (terpri) (princ string) (terpri))
+
+(defun user-print (object)
+    (if (compound-procedure-p object)
+        (princ (list 'compound-procedure
+                     (procedure-parameters object)
+                     (procedure-body object)
+                     '<procedure-env>))
+        (princ object)))
