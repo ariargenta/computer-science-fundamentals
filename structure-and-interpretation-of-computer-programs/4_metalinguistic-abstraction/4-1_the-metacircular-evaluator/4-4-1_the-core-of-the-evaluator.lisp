@@ -65,3 +65,191 @@
                      (eval (definition-value exp) env)
                      env)
     'ok)
+
+;;; 4.1.2 - Representing expressions
+
+(defun self-evaluating-p (exp)
+    (cond ((numberp exp) t)
+          ((stringp exp) t)
+          (t nil)))
+
+(defun variable-p (exp) (symbolp exp))
+
+(defun quoted-p (exp) (tagged-list-p exp 'quote))
+
+(defun text-of-quotation (exp) (cadr exp))
+
+(defun tagged-list-p (exp tag)
+    (if (consp exp)
+        (eq (car exp) tag)
+        nil))
+
+(defun assignment-p (exp) (tagged-list-p exp 'setf))
+
+(defun assignment-variable (exp) (cadr exp))
+
+(defun assignment-value (exp) (caddr exp))
+
+(defun definition-p (exp) (tagged-list-p exp 'defun))
+
+(defun definition-variable (exp)
+    (if (symbolp (cadr exp))
+        (cadr exp)
+        (caadr exp)))
+
+(defun definition-value (exp)
+    (if (symbolp (cadr exp))
+        (caddr exp)
+        (make-lambda (cdadr exp)    ; formal parameters
+                     (cddr exp))))  ; body
+
+(defun lambda-p (exp) (tagged-list-p exp 'lambda))
+
+(defun lambda-parameters (exp) (cadr exp))
+
+(defun lambda-body (exp) (cddr exp))
+
+(defun make-lambda (parameters body) (cons 'lambda (cons parameters body)))
+
+(defun if-p (exp) (tagged-list-p exp 'if))
+
+(defun if-predicate (exp) (cadr exp))
+
+(defun if-consequent (exp) (caddr exp))
+
+(defun if-alternative (exp)
+    (if (not (null (cdddr exp)))
+        (cadddr exp)
+        'nil))
+
+(defun make-if (predicate consequent alternative) (list 'if predicate consequent alternative))
+
+(defun begin-p (exp) (tagged-list-p exp 'begin))
+
+(defun begin-actions (exp) (cdr exp))
+
+(defun last-exp-p (seq) (null (cdr seq)))
+
+(defun first-exp (seq) (car seq))
+
+(defun rest-exps (seq) (cdr seq))
+
+(defun expand-sequence (seq)
+    (cond ((null seq) seq)
+          ((last-exp-p seq) (first-exp seq))
+          (t (make-begin seq))))
+
+(defun make-begin (seq) (cons 'begin seq))
+
+(defun application-p (exp) (consp exp))
+
+(defun operator (exp) (car exp))
+
+(defun operands (exp) (cdr exp))
+
+(defun no-operands-p (ops) (null ops))
+
+(defun first-operand (ops) (car ops))
+
+(defun rest-operands (ops) (cdr ops))
+
+(defun cond-p (exp) (tagged-list-p exp 'cond))
+
+(defun cond-clauses (exp) (cdr exp))
+
+(defun cond-else-clause-p (clause) (eq (cond-predicate clause) 'else))
+
+(defun cond-predicate (clause) (car clause))
+
+(defun cond-actions (clause) (cdr clause))
+
+(defun expand-cond (exp) (expand-clauses (cond-clauses exp)))
+
+(defun expand-clauses (clauses)
+    (if (null clauses)
+        'false
+        (let ((first (car clauses))
+              (rest (cdr clauses)))
+            (if (cond-else-clause-p first)
+                (if (null rest)
+                    (expand-sequence (cond-actions first))
+                    (error "ELSE clause is not last: EXPAND-COND ~A" clauses))
+                (make-if (cond-predicate first)
+                         (expand-sequence (cond-actions first))
+                         (expand-clauses rest))))))
+
+;;; 4.1.3 - Evaluator Data Structures
+
+(defun true-p (x) (not (eq x nil)))
+
+(defun false-p (x) (eq x nil))
+
+(defun make-procedure (parameters body env) (list 'procedure parameters body env))
+
+(defun compound-procedure-p (p) (tagged-list-p p 'procedure))
+
+(defun procedure-parameters (p) (cadr p))
+
+(defun procedure-body (p) (caddr p))
+
+(defun procedure-environment (p) (cadddr p))
+
+(defun enclosing-environment (env) (cdr env))
+
+(defun first-frame (env) (car env))
+
+(defparameter the-empty-environment '())
+
+(defun make-frame (variables values) (cons variables values))
+
+(defun frame-variables (frame) (car frame))
+
+(defun frame-values (frame) (cdr frame))
+
+(defun add-binding-to-frame (var val frame)
+    (setf frame (cons var (car frame)))
+    (setf frame (cons val (cdr frame))))
+
+(defun extend-environment (vars vals base-env)
+    (if (= (length vars) (length vals))
+        (cons (make-frame vars vals) base-env)
+        (if (< (length vars) (length vals))
+            (error "Too many arguments supplied ~A ~B" vars vals)
+            (error "Too few arguments supplied ~A ~B" vars vals))))
+
+(defun lookup-variable-value (var env)
+    (labels ((env-loop (env)
+                       (labels ((scan (vars vals)
+                                      (cond ((null vars)
+                                                (env-loop (enclosing-environment env)))
+                                            ((eq var (car vars)) (car vals))
+                                            (t (scan (cdr vars) (cdr vals))))))
+                           (if (eq env the-empty-environment)
+                               (error "Unbound variable ~A" var)
+                               (let ((frame (first-frame env)))
+                                   (scan (frame-variables frame)
+                                         (frame-values frame)))))))
+        (env-loop env)))
+
+(defun set-variable-value (var val env)
+    (labels ((env-loop (env)
+                       (labels ((scan (vars vals)
+                                      (cond ((null vars)
+                                                (env-loop (enclosing-environment env)))
+                                            ((eq var (car vars)) (setf vals val))
+                                            (t (scan (cdr vars) (cdr vals))))))
+                           (if (eq env the-empty-environment)
+                               (error "Unbound variable: SETF ~A" var)
+                               (let ((frame (first-frame env)))
+                                   (scan (frame-variables frame)
+                                         (frame-values frame)))))))
+        (env-loop env)))
+
+(defun define-variable (var val env)
+    (let ((frame (first-frame env)))
+        (labels ((scan (vars vals)
+                       (cond ((null vars)
+                                 (add-binding-to-frame var val frame))
+                             ((eq var (car vars)) (setf vals val))
+                             (t (scan (cdr vars) (cdr vals))))))
+            (scan (frame-variables frame) (frame-values frame)))))
