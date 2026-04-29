@@ -207,8 +207,8 @@
 (defun frame-values (frame) (cdr frame))
 
 (defun add-binding-to-frame (var val frame)
-    (setf frame (cons var (car frame)))
-    (setf frame (cons val (cdr frame))))
+    (setf (car frame) (cons var (car frame)))
+    (setf (cdr frame) (cons val (cdr frame))))
 
 (defun extend-environment (vars vals base-env)
     (if (= (length vars) (length vals))
@@ -236,7 +236,7 @@
                        (labels ((scan (vars vals)
                                       (cond ((null vars)
                                                 (env-loop (enclosing-environment env)))
-                                            ((eq var (car vars)) (setf vals val))
+                                            ((eq var (car vars)) (setf (car vals) val))
                                             (t (scan (cdr vars) (cdr vals))))))
                            (if (eq env the-empty-environment)
                                (error "Unbound variable: SETF ~A" var)
@@ -250,7 +250,7 @@
         (labels ((scan (vars vals)
                        (cond ((null vars)
                                  (add-binding-to-frame var val frame))
-                             ((eq var (car vars)) (setf vals val))
+                             ((eq var (car vars)) (setf (car vals) val))
                              (t (scan (cdr vars) (cdr vals))))))
             (scan (frame-variables frame) (frame-values frame)))))
 
@@ -265,9 +265,7 @@
         (define-variable 'false nil initial-env)
         initial-env))
 
-(defparameter the-global-environment (setup-environment))
-
-(defun primitive-procedure-p (proc) (tagged-list-p proc 'procedure))
+(defun primitive-procedure-p (proc) (tagged-list-p proc 'primitive))
 
 (defun primitive-implementation (proc) (cadr proc))
 
@@ -289,7 +287,7 @@
     (apply-in-underlying-lisp
      (primitive-implementation proc) args))
 
-(defun apply-in-underlying-lisp (function &rest arguments) (apply function arguments))
+(defun apply-in-underlying-lisp (function arguments) (cl:apply function arguments))
 
 (defparameter input-prompt ";;; M-Eval input: ")
 (defparameter output-prompt ";;; M-Eval value: ")
@@ -315,3 +313,5 @@
                      (procedure-body object)
                      '<procedure-env>))
         (princ object)))
+
+(defparameter the-global-environment (setup-environment))
