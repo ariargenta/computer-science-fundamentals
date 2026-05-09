@@ -5,11 +5,24 @@
 
 (in-package "CAP4")
 
-(defun eval (exp env) (funcall (analyse exp) env))
+;;; 4.4.1 - The Core Evaluator
+
+(defun eval (exp env)
+    (cond ((self-evaluating-p exp) exp)
+          ((variable-p exp) (lookup-variable-value exp env))
+          ((quoted-p exp) (text-of-quotation exp))
+          ((assignment-p exp) (eval-assignment exp env))
+          ((definition-p exp) (eval-definition exp env))
+          ((if-p exp) (eval-if exp env))
+          ((lambda-p exp) (make-procedure (lambda-parameters exp)
+                                          (lambda-body exp)
+                                          env))))
+
+(defun evaluate (exp env) (funcall (analyse exp) env))
 
 (defun analyse (exp)
     (cond ((self-evaluating-p exp) (analyse-self-evaluating exp))
-          ((variable-p exp) (analyse-variable exp env))
+          ((variable-p exp) (analyse-variable exp))
           ((quoted-p exp) (analyse-quoted exp))
           ((assignment-p exp) (analyse-assignment exp))
           ((definition-p exp) (analyse-definition exp))
