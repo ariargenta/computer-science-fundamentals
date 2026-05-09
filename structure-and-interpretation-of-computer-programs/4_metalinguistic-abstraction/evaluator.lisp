@@ -395,4 +395,90 @@
                         (procedure-environment proc))))
           (t (error "Unknown procedure type: EXECUTE-APPLICATION ~A" proc))))
 
+;;; 4.2.2 - An interpreter with Lazy Evaluation
+
+(defun actual-value (exp env)
+    (force-it (eval exp env)))
+
+(defun to-apply (procedure arguments env)
+    (cond ((primitive-procedure-p procedure)
+              (apply-primitive-procedure
+               procedure
+               (list-of-arg-values arguments env)))
+          ((compound-procedure-p procedure)
+              (eval-sequence
+               (procedure-body procedure)
+               (extend-environment
+                (procedure-parameters procedure)
+                (list-of-delayed-args arguments env)
+                (procedure-environment procedure))))
+          (t (error "Unknown procedure type: APPLY ~A"
+                 procedure))))
+
+(defun list-of-arg-values (exps env)
+    (if (no-operands-p exps)
+        '()
+        (cons (actual-value (first-operand exps)
+                            env)
+              (list-of-arg-values (rest-operands exps)
+                                  env))))
+
+(defun list-of-delayed-args (exps env)
+    (if (no-operands-p exps)
+        '()
+        (cons (delay-it (first-operand exps)
+                        env)
+                        (list-of-delayed-args (rest-operands exps)
+                                    env))))
+
+(defun eval_if (exp env)
+    (if (true-p (actual-value (if-predicate exp) env))
+        (eval (if-consequent exp) env)
+        (eval (if-alternative exp) env)))
+
+(defparameter input_prompt ";;; L-Eval input:")
+(defparameter output_prompt ";;; L-Eval value:")
+
+(defun driver_loop ()
+    (prompt-for-input input_prompt)
+    (let ((input (read)))
+        (let ((output
+               (actual-value
+                input the-global-environment)))
+            (announce-output output-prompt)
+            (user-print output)))
+    (driver_loop))
+
+(defun force-it (obj)
+    (if (thunk-p obj)
+        (actual-value (thunk-exp obj) (thunk-env obj))
+        obj))
+
+(defun delay-it (exp env)
+    (list 'thunk exp env))
+
+(defun thunk-p (obj)
+    (tagged-list-p obj 'thunk))
+
+(defun thunk-exp (thunk) (cadr thunk))
+
+(defun thunk-env (thunk) (caddr thunk))
+
+(defun evaluated-thunk-p (obj)
+    (tagged-list-p obj 'evaluated-thunk))
+
+(defun thunk-value (evaluated-thunk) (cadr evaluated-thunk))
+
+(defun force_it (obj)
+    (cond ((thunk-p obj)
+              (let ((result (actual-value (thunk-exp obj)
+                                          (thunk-env obj))))
+                  (setf (car obj) 'evaluated-thunk)
+                  (setf (cadr obj) result)
+                  (setf (cddr obj) nil)
+                  result))
+          ((evaluated-thunk-p obj) (thunk-value obj))
+          (t obj)))
+
+;;; Startup
 (defparameter the-global-environment (setup-environment))
