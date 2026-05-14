@@ -480,5 +480,180 @@
           ((evaluated-thunk-p obj) (thunk-value obj))
           (t obj)))
 
+;;; 4.3.2 - Implementing the `amb` evaluator
+
+(defun amb-p (exp) (tagged-list-p exp 'amb))
+
+(defun amb-choices (exp) (cdr exp))
+
+(defun ambeval (exp env succeed fail)
+    (funcall (analyse exp) env succeed fail))
+
+(defun analyze-self-evaluating (exp)
+    (lambda (env succeed fail)
+        (declare (ignore env))
+        (funcall succeed exp fail)))
+
+(defun analyze-quoted (exp)
+    (let ((qval (text-of-quotation exp)))
+        (lambda (env succeed fail)
+            (declare (ignore env))
+            (funcall succeed qval fail))))
+
+(defun analyze-variable (exp)
+    (lambda (env succeed fail)
+        (funcall succeed (lookup-variable-value exp env) fail)))
+
+(defun analyze-lambda (exp)
+    (let ((vars (lambda-parameters exp))
+          (bproc (analyse-sequence (lambda-body exp))))
+        (lambda (env succeed fail)
+            (funcall succeed (make-procedure vars bproc env) fail))))
+
+(defun analyze-if (exp)
+    (let ((pproc (analyse (if-predicate exp)))
+          (cproc (analyse (if-consequent exp)))
+          (aproc (analyse (if-alternative exp))))
+        (lambda (env succeed fail)
+            (funcall pproc env
+                   ; success continuation for evaluating the predicate to obtain `pred-value`
+                   (lambda (pred-value fail2)
+                       (if (true-p pred-value)
+                           (funcall cproc env succeed fail2)
+                           (funcall aproc env succeed fail2)))
+                   ; failure continuation for evaluating the predicate
+                   fail))))
+
+(defun analyze-sequence (exps)
+    (labels ((sequentially (a b)
+                           (lambda (env succeed fail)
+                               (funcall a env
+                                  ; success continuation for calling `a`
+                                  (lambda (a-value fail2)
+                                      (declare (ignore a-value))
+                                      (funcall b env succeed fail2))
+                                  ; failure continuation for calling `a`
+                                  fail)))
+             (looping (first-proc rest-procs)
+                      (if (null rest-procs)
+                          first-proc
+                          (looping (sequentially first-proc
+                                                 (car rest-procs))
+                                   (cdr rest-procs)))))
+        (let ((procs (map 'list #'analyse exps)))
+            (if (null procs)
+                (error "Empty sequence: ANALYSE"))
+            (looping (car procs) (cdr procs)))))
+
+(defun analyze-definition (exp)
+    (let ((var (definition-variable exp))
+          (vproc (analyse (definition-value exp))))
+        (lambda (env succeed fail)
+            (funcall vproc env
+                   (lambda (val fail2)
+                       (define-variable var val env)
+                       (funcall succeed 'ok fail2))
+                   fail))))
+
+(defun analyze-assignment (exp)
+    (let ((var (assignment-variable exp))
+          (vproc (analyse (assignment-value exp))))
+        (lambda (env succeed fail)
+            (funcall vproc env
+                   (lambda (val fail2)
+                       (let ((old-value
+                              (lookup-variable-value var env)))
+                           (set-variable-value var val env)
+                           (funcall succeed 'ok
+                                    (lambda ()  ; *2*
+                                        (set-variable-value
+                                         var old-value env)
+                                        (funcall fail2)))))
+                   fail))))
+
+(defun analyze-application (exp)
+    (let ((fproc (analyse (operator exp)))
+          (aprocs (map 'list #'analyse (operands exp))))
+        (lambda (env succeed fail)
+            (funcall fproc env
+                   (lambda (proc fail2)
+                       (get-args aprocs
+                                 env
+                                 (lambda (args fail3)
+                                     (execute_application
+                                      proc args succeed fail3))
+                                 fail2))
+                   fail))))
+
+(defun get-args (aprocs env succeed fail)
+    (if (null aprocs)
+        (funcall succeed '() fail)
+        (funcall (car aprocs)
+         env
+         ; success continuation for this aproc
+         (lambda (arg fail2)
+             (get-args
+              (cdr aprocs)
+              env
+              ; success continuation for recursive call to get-args
+              (lambda (args fail3)
+                  (funcall succeed (cons arg args) fail3))
+              fail2))
+         fail)))
+
+(defun execute_application (proc args succeed fail)
+    (cond ((primitive-procedure-p proc)
+              (funcall succeed (apply-primitive-procedure proc args)
+                       fail))
+          ((compound-procedure-p proc)
+              (funcall (procedure-body proc)
+                  (funcall #'extend-environment (procedure-parameters proc)
+                      args
+                      (procedure-environment proc))
+                  succeed
+                  fail))
+          (t
+              (error "Unknown procedure type: EXECUTE-APPLICATION ~A"
+                  proc))))
+
+(defun analyse-amb (exp)
+    (let ((cprocs (map 'list #'analyse (amb-choices exp))))
+        (lambda (env succeed fail)
+            (labels ((try-next (choices)
+                               (if (null choices)
+                                   (funcall fail)
+                                   (funcall (car choices)
+                                    env
+                                    succeed
+                                    (lambda () (try-next (cdr choices)))))))
+                (try-next cprocs)))))
+
+(defun driverLoop ()
+    (labels ((internal-loop (try-again)
+                            (prompt-for-input input-prompt)
+                            (let ((input (read)))
+                                (if (eq input 'try-again)
+                                    (funcall try-again)
+                                    (progn
+                                     (terpri) (princ ";;; Starting a new problem ")
+                                     (ambeval
+                                      input
+                                      the-global-environment
+                                      ; ambeval success
+                                      (lambda (val next-alternative)
+                                          (announce-output output-prompt)
+                                          (user-print val)
+                                          (internal-loop next-alternative))
+                                      ; ambeval failure
+                                      (lambda ()
+                                          (announce-output
+                                           ";;; There are no more values of")
+                                          (user-print input)
+                                          (driver-loop))))))))
+        (internal-loop
+         (lambda ()
+             (terpri) (princ ";;; There is no current problem")
+             (driverLoop)))))
+
 ;;; Startup
 (defparameter the-global-environment (setup-environment))
